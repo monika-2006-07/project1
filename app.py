@@ -1411,7 +1411,26 @@ def view_course(course_id):
                 lesson_dict["is_completed"] = False
             lessons.append(lesson_dict)
 
-    return render_template("course_view.html", course=course, lessons=lessons, is_enrolled=is_enrolled)
+        # Automatic Certificate Generation
+        certificate_code = None
+        if is_enrolled and lessons:
+            completed_lessons_count = sum(1 for l in lessons if l["is_completed"])
+            if completed_lessons_count == len(lessons):
+                cert = conn.execute(
+                    "SELECT certificate_code FROM certificates WHERE user_id = ? AND course_id = ?",
+                    (user_id, course_id)
+                ).fetchone()
+                if not cert:
+                    certificate_code = generate_certificate_code()
+                    conn.execute(
+                        "INSERT INTO certificates (user_id, course_id, certificate_code) VALUES (?, ?, ?)",
+                        (user_id, course_id, certificate_code)
+                    )
+                    conn.commit()
+                else:
+                    certificate_code = cert["certificate_code"]
+
+    return render_template("course_view.html", course=course, lessons=lessons, is_enrolled=is_enrolled, certificate_code=certificate_code)
 
 
 @app.route("/lesson/<int:lesson_id>")

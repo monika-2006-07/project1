@@ -60,18 +60,16 @@
                 <td>{{ e.completed_lessons }} / {{ e.total_lessons }}</td>
                 <td>
                   {% if e.cert_id %}
-                    <span class="badge badge--success">✓ Issued</span>
+                    <span class="badge badge--success">✓ Awarded</span>
                   {% else %}
-                    <span class="badge badge--warning">Pending</span>
+                    <span class="badge badge--warning">Completed (Unclaimed)</span>
                   {% endif %}
                 </td>
                 <td>
-                  {% if not e.cert_id %}
-                    <form method="POST" action="{{ url_for('issue_certificate', user_id=e.user_id, course_id=e.course_id) }}">
-                      <button type="submit" class="btn btn--primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Issue Certificate</button>
-                    </form>
+                  {% if e.cert_id %}
+                    <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">✓ Automatically Generated</span>
                   {% else %}
-                    <span style="color: #6b7280; font-size: 0.9rem;">Certificate generated</span>
+                    <span style="color: #6b7280; font-size: 0.9rem;">Will generate on student claim</span>
                   {% endif %}
                 </td>
               </tr>
