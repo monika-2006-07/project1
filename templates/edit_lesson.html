@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Edit Lesson - {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <i data-lucide="shield-check" class="sidebar-logo"></i>
+      <h2 class="sidebar-title">Admin Panel</h2>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+        <i data-lucide="layout-dashboard" class="nav-icon"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('admin_courses') }}" class="nav-item active">
+        <i data-lucide="clipboard-list" class="nav-icon"></i>
+        <span>Courses</span>
+      </a>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="btn-logout">
+        <i data-lucide="log-out"></i>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="content-header">
+      <h1 class="page-title">Edit Lesson: {{ lesson.title }}</h1>
+      <a href="{{ url_for('admin_lessons', course_id=course.id) }}" class="btn btn--neutral" style="text-decoration: none;">← Back to Lessons</a>
+    </div>
+
+    <!-- Edit Lesson Section -->
+    <div class="section-compact">
+      <div class="assign-work-form-compact">
+        <form method="POST">
+          <div class="form-row-compact">
+            <div class="form-group">
+              <label for="title">Lesson Title *</label>
+              <input type="text" id="title" name="title" value="{{ lesson.title }}" required />
+            </div>
+            <div class="form-group">
+              <label for="order_index">Order Index</label>
+              <input type="number" id="order_index" name="order_index" value="{{ lesson.order_index }}" required />
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="video_url">Video URL (optional)</label>
+            <input type="text" id="video_url" name="video_url" value="{{ lesson.video_url or '' }}" placeholder="https://youtube.com/embed/..." />
+          </div>
+
+          <div class="form-group">
+            <label for="content">Lesson Content (Markdown/HTML Support)</label>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">You can use HTML tags like &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, or Markdown syntax.</p>
+            <textarea id="content" name="content" rows="15" placeholder="Enter lesson content here...">{{ lesson.content or '' }}</textarea>
+          </div>
+          
+          <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button type="submit" class="btn btn--primary">Save Changes</button>
+            <a href="{{ url_for('admin_lessons', course_id=course.id) }}" class="btn btn--neutral" style="text-decoration: none;">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

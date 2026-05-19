@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate of Completion - {{ cert.username }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Cinzel:wght@700&family=Montserrat:wght@400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0c1425;
+            --gold: #c5a059;
+            --gold-light: #e6c288;
+            --gold-dark: #8c6a2c;
+        }
+        
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--primary);
+        }
+
+        .certificate-outer {
+            width: 1000px;
+            height: 720px;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold-light), var(--gold-dark));
+            position: relative;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .certificate-inner {
+            width: 100%;
+            height: 100%;
+            background: #fffcf5; /* Antique White */
+            padding: 60px;
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid var(--gold);
+        }
+
+        .certificate-inner::after {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border: 1px solid var(--gold-dark);
+            pointer-events: none;
+        }
+
+        /* Ornate Corners */
+        .corner {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 4px solid var(--gold);
+            z-index: 10;
+        }
+        .corner-tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 10px 0 0 0; }
+        .corner-tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 10px 0 0; }
+        .corner-bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 10px; }
+        .corner-br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 10px 0; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .brand-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold-dark);
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-family: 'Cinzel', serif;
+            font-size: 4rem;
+            margin: 0;
+            background: linear-gradient(to bottom, var(--gold-dark), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-top: -10px;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+
+        .award-text {
+            font-size: 1.2rem;
+            margin: 40px 0 10px;
+            color: #444;
+        }
+
+        .recipient-name {
+            font-family: 'Great Vibes', cursive;
+            font-size: 5rem;
+            color: var(--primary);
+            margin: 10px 0;
+            border-bottom: 2px solid var(--gold-light);
+            padding: 0 40px;
+            display: inline-block;
+        }
+
+        .course-info {
+            font-size: 1.2rem;
+            margin: 30px 0;
+            text-align: center;
+            max-width: 700px;
+        }
+
+        .course-title {
+            font-weight: 600;
+            font-size: 1.8rem;
+            color: var(--gold-dark);
+            display: block;
+            margin-top: 10px;
+        }
+
+        .footer {
+            margin-top: auto;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 60px;
+        }
+
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+
+        .signature-line {
+            border-top: 1px solid var(--gold-dark);
+            margin-bottom: 10px;
+        }
+
+        .signature-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .seal {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, var(--gold-light), var(--gold-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 4px double white;
+            position: relative;
+        }
+
+        .seal::before {
+            content: "OFFICIAL";
+            font-size: 0.6rem;
+            position: absolute;
+            top: 25px;
+        }
+
+        .cert-id {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            font-size: 0.7rem;
+            color: #999;
+            font-family: monospace;
+        }
+
+        @media print {
+            .btn-print { display: none; }
+            body { background: white; }
+            .certificate-outer { box-shadow: none; -webkit-print-color-adjust: exact; }
+        }
+
+        .btn-print {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: var(--gold-dark);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        
+        .btn-print:hover {
+            transform: translateY(-2px);
+            background: var(--gold);
+        }
+    </style>
+</head>
+<body>
+    <button class="btn-print" onclick="window.print()">Download / Print Certificate</button>
+    
+    <div class="certificate-outer">
+        <div class="certificate-inner">
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            
+            <div class="header">
+                <div class="brand-name">Learning Management Academy</div>
+                <h1 class="title">Certificate</h1>
+                <div class="subtitle">OF COMPLETION</div>
+            </div>
+            
+            <div class="award-text">THIS CERTIFICATE IS PROUDLY PRESENTED TO</div>
+            <div class="recipient-name">{{ cert.username }}</div>
+            
+            <div class="course-info">
+                For the successful completion and mastery of the course
+                <span class="course-title">{{ cert.course_title }}</span>
+            </div>
+            
+            <div class="seal">ACADEMY</div>
+            
+            <div class="footer">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">Course Instructor</div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <div style="font-size: 0.9rem; color: #777;">DATE OF ISSUE</div>
+                    <div style="font-weight: 600; color: var(--primary);">{{ cert.issued_at[:10] }}</div>
+                </div>
+
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">Academic Director</div>
+                </div>
+            </div>
+            
+            <div class="cert-id">VERIFICATION CODE: {{ cert.certificate_code }}</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <i data-lucide="shield-check" class="sidebar-logo"></i>
+      <h2 class="sidebar-title">Admin Panel</h2>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <a href="#overview" class="nav-item active">
+        <i data-lucide="layout-dashboard" class="nav-icon"></i>
+        <span>Overview</span>
+      </a>
+      <a href="#assign" class="nav-item">
+        <i data-lucide="plus-circle" class="nav-icon"></i>
+        <span>Assign Work</span>
+      </a>
+      <a href="#assignments" class="nav-item">
+        <i data-lucide="list-checks" class="nav-icon"></i>
+        <span>Assignments</span>
+      </a>
+      <a href="#users" class="nav-item">
+        <i data-lucide="users" class="nav-icon"></i>
+        <span>Users</span>
+      </a>
+      <a href="#attendance" class="nav-item">
+        <i data-lucide="calendar-check" class="nav-icon"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="#duration" class="nav-item">
+        <i data-lucide="timer" class="nav-icon"></i>
+        <span>Work Duration</span>
+      </a>
+      <a href="{{ url_for('admin_courses') }}" class="nav-item">
+        <i data-lucide="book-open" class="nav-icon"></i>
+        <span>LMS Courses</span>
+      </a>
+      <a href="#enrollments" class="nav-item">
+        <i data-lucide="user-plus" class="nav-icon"></i>
+        <span>Course Enrollments</span>
+      </a>
+      <a href="{{ url_for('admin_certificates') }}" class="nav-item">
+        <i data-lucide="award" class="nav-icon"></i>
+        <span>Certificates</span>
+      </a>
+    </nav>
+    
+    <!-- Active Workers Sidebar Section -->
+    <div class="sidebar-active-workers" style="padding: 1.5rem; border-top: 1px solid var(--border-color); margin-top: auto;">
+      <h3 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.5px;">Working Now</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        {% set active_users = users | selectattr('is_punched_in', 'equalto', true) | list %}
+        {% if active_users %}
+          {% for user in active_users %}
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-primary);">
+              <span style="color: #10b981; font-size: 0.8rem;">●</span>
+              <span>{{ user.username }}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic;">No active workers</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="admin-info">
+        <div class="admin-avatar">{{ admin_username[0].upper() }}</div>
+        <div class="admin-details">
+          <div class="admin-name">{{ admin_username }}</div>
+          <div class="admin-role">Administrator</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="btn-logout">
+        <i data-lucide="log-out"></i>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="content-header">
+      <h1 class="page-title">Dashboard Overview</h1>
+      <p class="page-subtitle">Welcome back, {{ admin_username }}!</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div id="overview" class="stats-grid-compact">
+      <div class="stat-card-compact">
+        <i data-lucide="users" class="stat-icon-compact"></i>
+        <div class="stat-content-compact">
+          <div class="stat-label-compact">Total Users</div>
+          <div class="stat-value-compact">{{ users|length }}</div>
+        </div>
+      </div>
+      <div class="stat-card-compact">
+        <i data-lucide="bar-chart-3" class="stat-icon-compact"></i>
+        <div class="stat-content-compact">
+          <div class="stat-label-compact">Attendance</div>
+          <div class="stat-value-compact">{{ attendance_records|length }}</div>
+        </div>
+      </div>
+      <div class="stat-card-compact">
+        <i data-lucide="clipboard-list" class="stat-icon-compact"></i>
+        <div class="stat-content-compact">
+          <div class="stat-label-compact">Assignments</div>
+          <div class="stat-value-compact">{{ work_assignments|length }}</div>
+        </div>
+      </div>
+      <div class="stat-card-compact">
+        <i data-lucide="history" class="stat-icon-compact"></i>
+        <div class="stat-content-compact">
+          <div class="stat-label-compact">Pending</div>
+          <div class="stat-value-compact">{{ work_assignments|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Workers Section -->
+    <div class="active-workers-box" style="background: white; padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+      <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #111827; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: #10b981; font-size: 1.2rem;">●</span> Active Workers Now
+      </h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        {% set active_users = users | selectattr('is_punched_in', 'equalto', true) | list %}
+        {% if active_users %}
+          {% for user in active_users %}
+            <span class="badge badge--success" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">
+              {{ user.username }}
+            </span>
+          {% endfor %}
+        {% else %}
+          <span style="color: #6b7280; font-size: 0.9rem; font-style: italic;">No one is currently punched in.</span>
+        {% endif %}
+      </div>
+    </div>
+
+  <!-- Assign Work Section -->
+  <div id="assign" class="section-compact">
+    <h2 class="section-title-compact">Assign Work</h2>
+    <div class="assign-work-form-compact">
+      <form method="POST" action="{{ url_for('assign_work') }}">
+        <div class="form-row-compact">
+          <div class="form-group">
+            <label for="user_id">Select User *</label>
+            <select id="user_id" name="user_id" required>
+              <option value="">-- Choose User --</option>
+              {% for user in users %}
+              <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="high">🔴 High</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="due_date">Due Date</label>
+            <input type="date" id="due_date" name="due_date" />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="title">Task Title *</label>
+          <input type="text" id="title" name="title" placeholder="Enter task title" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="3" placeholder="Enter task description (optional)"></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn--primary">✓ Assign Work</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Work Assignments Section -->
+  <div id="assignments" class="section-compact">
+    <h2 class="section-title-compact">Work Assignments ({{ work_assignments|length }})</h2>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Due Date</th>
+            <th>Assigned</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if work_assignments %}
+            {% for assignment in work_assignments %}
+            <tr>
+              <td><strong>#{{ assignment.id }}</strong></td>
+              <td><strong>{{ assignment.username }}</strong></td>
+              <td>{{ assignment.title }}</td>
+              <td>{{ assignment.description or '-' }}</td>
+              <td>
+                {% if assignment.priority == 'high' %}
+                  <span class="badge badge--danger">🔴 High</span>
+                {% elif assignment.priority == 'medium' %}
+                  <span class="badge badge--warning">🟡 Medium</span>
+                {% else %}
+                  <span class="badge badge--info">🟢 Low</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if assignment.status == 'completed' %}
+                  <span class="badge badge--success">✓ Completed</span>
+                {% elif assignment.status == 'in_progress' %}
+                  <span class="badge badge--info">⏳ In Progress</span>
+                {% else %}
+                  <span class="badge badge--neutral">⏸ Pending</span>
+                {% endif %}
+              </td>
+              <td>{{ assignment.due_date or '-' }}</td>
+              <td>{{ assignment.assigned_at[:10] }}</td>
+              <td>
+                <div class="action-buttons">
+                  <form method="POST" action="{{ url_for('update_assignment_status', assignment_id=assignment.id) }}" style="display: inline;">
+                    <select name="status" onchange="this.form.submit()" class="status-select">
+                      <option value="pending" {% if assignment.status == 'pending' %}selected{% endif %}>Pending</option>
+                      <option value="in_progress" {% if assignment.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                      <option value="completed" {% if assignment.status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                  </form>
+                  <form method="POST" action="{{ url_for('delete_assignment', assignment_id=assignment.id) }}" style="display: inline;" onsubmit="return confirm('Delete this assignment?');">
+                    <button type="submit" class="btn-delete">🗑️</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" class="no-data">No work assignments yet. Use the form above to assign work to users.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Users Section -->
+  <div id="users" class="section-compact">
+    <h2 class="section-title-compact">Registered Users ({{ users|length }})</h2>
+
+    <div class="assign-work-form-compact" style="margin-bottom: 2rem;">
+      <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-primary);">Create New User</h3>
+      <form method="POST" action="{{ url_for('admin_create_user') }}">
+        <div class="form-row-compact">
+          <div class="form-group">
+            <label for="new_username">Username *</label>
+            <input type="text" id="new_username" name="username" placeholder="Enter username" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="new_email">Email *</label>
+            <input type="email" id="new_email" name="email" placeholder="Enter email" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="new_password">Password *</label>
+            <input type="password" id="new_password" name="password" placeholder="Enter password" required />
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn--primary">✓ Create User</button>
+      </form>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Registered At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if users %}
+            {% for user in users %}
+            <tr>
+              <td><strong>#{{ user.id }}</strong></td>
+              <td><strong>{{ user.username }}</strong></td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.created_at }}</td>
+              <td>
+                <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" class="btn btn--primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; border-radius: 4px; text-decoration: none;">Edit</a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="no-data">No users registered yet.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Attendance Records Section -->
+  <div id="attendance" class="section-compact">
+    <h2 class="section-title-compact">Attendance Records ({{ attendance_records|length }})</h2>
+    
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <form method="GET" action="{{ url_for('admin_dashboard') }}" class="filter-form">
+        <div class="filter-group">
+          <label for="filter_user">Filter by Employee:</label>
+          <select id="filter_user" name="filter_user" onchange="this.form.submit()">
+            <option value="">-- All Employees --</option>
+            {% for user in users %}
+            <option value="{{ user.id }}" {% if filter_user_id == user.id %}selected{% endif %}>
+              {{ user.username }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if filter_user_id %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-clear-filter">✕ Clear Filter</a>
+        {% endif %}
+      </form>
+    </div>
+    
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Email</th>
+            <th>Punch In</th>
+            <th>Punch Out</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if attendance_records %}
+            {% for record in attendance_records %}
+            <tr>
+              <td><strong>#{{ record.id }}</strong></td>
+              <td><strong>{{ record.username }}</strong></td>
+              <td>{{ record.email }}</td>
+              <td>{{ record.punch_in }}</td>
+              <td>{{ record.punch_out or 'In Progress' }}</td>
+              <td><span class="badge badge--duration">{{ record.duration }}</span></td>
+              <td>
+                {% if record.work_status == 'finished' %}
+                  <span class="badge badge--success">✓ Finished</span>
+                {% elif record.work_status == 'not_finished' %}
+                  <span class="badge badge--warning">⚠ Not Finished</span>
+                {% else %}
+                  <span class="badge badge--neutral">-</span>
+                {% endif %}
+              </td>
+              <td>{{ record.reason or '-' }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="no-data">
+                {% if filter_user_id %}
+                  No attendance records found for this employee.
+                {% else %}
+                  No attendance records yet.
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Total Work Duration Section -->
+  <div id="duration" class="section-compact">
+    <h2 class="section-title-compact">Total Work Duration by Employee</h2>
+    <div class="work-stats-grid">
+      {% if user_work_stats %}
+        {% for user_id, stats in user_work_stats.items() %}
+        <div class="work-stat-card">
+          <div class="work-stat-header">
+            <span class="work-stat-icon icon-user"></span>
+            <h3 class="work-stat-name">{{ stats.username }}</h3>
+          </div>
+          <div class="work-stat-body">
+            <div class="work-stat-item">
+              <span class="work-stat-label">Total Time:</span>
+              <span class="work-stat-value">{{ stats.formatted }}</span>
+            </div>
+            <div class="work-stat-item">
+              <span class="work-stat-label">Sessions:</span>
+              <span class="work-stat-value">{{ stats.total_records }}</span>
+            </div>
+            <div class="work-stat-item">
+              <span class="work-stat-label">Avg/Session:</span>
+              <span class="work-stat-value">
+                {% if stats.total_records > 0 %}
+                  {{ (stats.total_hours * 60 + stats.total_minutes) // stats.total_records }}m
+                {% else %}
+                  0m
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <a href="{{ url_for('admin_dashboard') }}?filter_user={{ user_id }}" class="work-stat-link">
+            View Details →
+          </a>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="no-records">No work duration data available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Course Enrollments Tracking Section -->
+  <div id="enrollments" class="section-compact">
+    <h2 class="section-title-compact">Course Enrollments & Progress</h2>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Course Title</th>
+            <th>Lessons Completed</th>
+            <th>Progress</th>
+            <th>Enrolled At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if enrollments %}
+            {% for enrollment in enrollments %}
+            <tr>
+              <td><strong>{{ enrollment.username }}</strong></td>
+              <td>{{ enrollment.course_title }}</td>
+              <td>
+                <span class="badge badge--info">{{ enrollment.completed_lessons }} / {{ enrollment.total_lessons }}</span>
+              </td>
+              <td style="min-width: 200px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="flex-grow: 1; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                    <div style="height: 100%; width: {{ enrollment.progress }}%; background: #6366f1; border-radius: 10px;"></div>
+                  </div>
+                  <span style="font-size: 0.85rem; font-weight: 600; min-width: 40px;">{{ enrollment.progress }}%</span>
+                </div>
+              </td>
+              <td>{{ enrollment.enrolled_at[:10] }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="no-data">No students enrolled in any courses yet.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </main>
+</div>
+{% endblock %}

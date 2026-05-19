@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="user-layout">
+  <!-- Top Bar -->
+  <header class="user-topbar">
+    <div class="topbar-left">
+      <i data-lucide="home" class="topbar-logo"></i>
+      <div>
+        <h1 class="topbar-title">Dashboard</h1>
+        <p class="topbar-subtitle">{{ username }}</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+      <a href="{{ url_for('courses') }}" class="btn-logout-compact" style="background-color: #10b981; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="search" size="18"></i> Browse Courses
+      </a>
+      <a href="{{ url_for('my_certificates') }}" class="btn-logout-compact" style="background-color: #d4af37; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="award" size="18"></i> My Certificates
+      </a>
+      <a href="{{ url_for('edit_profile') }}" class="btn-logout-compact" style="background-color: var(--primary-color); display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="user-cog" size="18"></i> Edit Profile
+      </a>
+      <a href="{{ url_for('logout') }}" class="btn-logout-compact" style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="log-out" size="18"></i> Logout
+      </a>
+    </div>
+  </header>
+
+  <div class="user-container">
+    <!-- Left Sidebar -->
+    <aside class="user-sidebar">
+      <!-- Punch Card -->
+      <div class="punch-card-compact">
+        <h3 class="card-title-compact">Time Tracking</h3>
+        {% if open_session %}
+          <div class="punch-status-compact punch-in">
+            <span class="status-dot"></span>
+            <div class="status-text">
+              <div class="status-label">Punched In</div>
+              <div class="status-time">{{ open_session['punch_in'] }}</div>
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('punch_out') }}">
+            <button type="submit" class="btn-punch btn-punch-out">Punch Out</button>
+          </form>
+        {% else %}
+          <div class="punch-status-compact punch-out">
+            <span class="status-dot"></span>
+            <div class="status-text">
+              <div class="status-label">Not Punched In</div>
+              <div class="status-time">Start your shift</div>
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('punch_in') }}">
+            <button type="submit" class="btn-punch btn-punch-in">Punch In</button>
+          </form>
+        {% endif %}
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="quick-stats-compact">
+        <h3 class="card-title-compact">Quick Stats</h3>
+        <div class="stat-row">
+          <span class="stat-label-small">Total</span>
+          <span class="stat-value-small">{{ assignments|length }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label-small">Pending</span>
+          <span class="stat-value-small">{{ assignments|selectattr('status', 'equalto', 'pending')|list|length }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label-small">In Progress</span>
+          <span class="stat-value-small">{{ assignments|selectattr('status', 'equalto', 'in_progress')|list|length }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label-small">Completed</span>
+          <span class="stat-value-small">{{ assignments|selectattr('status', 'equalto', 'completed')|list|length }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label-small">Attendance</span>
+          <span class="stat-value-small">{{ history|length }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="user-main">
+      <!-- Work Assignments -->
+      <div class="content-card">
+        <h2 class="content-title">My Work Assignments</h2>
+        
+        {% if not is_punched_in %}
+        <div class="alert-box">
+          <i data-lucide="alert-triangle" class="alert-icon"></i>
+          <div>
+            <div class="alert-title">Punch In Required</div>
+            <div class="alert-text">You must punch in to update tasks.</div>
+          </div>
+        </div>
+        {% endif %}
+        
+        {% if assignments %}
+          <div class="assignments-list">
+            {% for assignment in assignments %}
+            <div class="assignment-item assignment-{{ assignment.status }}">
+              <div class="assignment-main">
+                <div class="assignment-top">
+                  <h4 class="assignment-name">{{ assignment.title }}</h4>
+                  {% if assignment.priority == 'high' %}
+                    <span class="priority-tag priority-high">High</span>
+                  {% elif assignment.priority == 'medium' %}
+                    <span class="priority-tag priority-medium">Medium</span>
+                  {% else %}
+                    <span class="priority-tag priority-low">Low</span>
+                  {% endif %}
+                </div>
+                
+                {% if assignment.description %}
+                <p class="assignment-desc">{{ assignment.description }}</p>
+                {% endif %}
+                
+                <div class="assignment-info">
+                  <span>{{ assignment.assigned_at[:10] }}</span>
+                  {% if assignment.due_date %}
+                  <span>Due: {{ assignment.due_date }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <div class="assignment-actions">
+                <span class="status-tag status-{{ assignment.status }}">
+                  {% if assignment.status == 'completed' %}
+                    Completed
+                  {% elif assignment.status == 'in_progress' %}
+                    In Progress
+                  {% else %}
+                    Pending
+                  {% endif %}
+                </span>
+                
+                {% if assignment.status != 'completed' %}
+                  {% if is_punched_in %}
+                    <form method="POST" action="{{ url_for('update_my_assignment', assignment_id=assignment.id) }}">
+                      {% if assignment.status == 'pending' %}
+                        <input type="hidden" name="status" value="in_progress" />
+                        <button type="submit" class="btn-action btn-start">Start</button>
+                      {% elif assignment.status == 'in_progress' %}
+                        <input type="hidden" name="status" value="completed" />
+                        <button type="submit" class="btn-action btn-complete">Complete</button>
+                      {% endif %}
+                    </form>
+                  {% else %}
+                    <button type="button" class="btn-action btn-disabled" disabled>
+                      {% if assignment.status == 'pending' %}Start{% else %}Complete{% endif %}
+                    </button>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="no-data-text">No work assignments yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- Attendance History -->
+      <div class="content-card">
+        <h2 class="content-title">Attendance History</h2>
+        {% if history %}
+          <div class="table-compact">
+            <table class="data-table-compact">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Punch In</th>
+                  <th>Punch Out</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in history %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ row['punch_in'] }}</td>
+                  <td>{{ row['punch_out'] }}</td>
+                  <td><span class="badge badge--duration">{{ row['duration'] }}</span></td>
+                  <td>
+                    {% if row['work_status'] == 'finished' %}
+                      <span class="badge badge--success">Finished</span>
+                    {% elif row['work_status'] == 'not_finished' %}
+                      <span class="badge badge--warning">Not Finished</span>
+                    {% else %}
+                      <span class="badge badge--neutral">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ row['reason'] or '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="no-data-text">No attendance records yet.</p>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}

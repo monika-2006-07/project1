@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Work Status{% endblock %}
+
+{% block content %}
+<div class="status-page">
+  <div class="status-container">
+    <div class="status-header">
+      <div class="status-icon-large"></div>
+      <h1 class="status-title">Work Status</h1>
+      <p class="status-subtitle">How did your shift go?</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('work_status', attendance_id=attendance_id) }}" id="statusForm">
+      
+      <!-- Status Options -->
+      <div class="status-options">
+        <label class="status-option" id="label-finished">
+          <input type="radio" name="work_status" value="finished" required onchange="toggleReason(this.value)" />
+          <div class="option-content">
+            <div class="option-icon icon-check"></div>
+            <div class="option-text">
+              <div class="option-title">Finished</div>
+              <div class="option-desc">All tasks completed successfully</div>
+            </div>
+          </div>
+        </label>
+
+        <label class="status-option" id="label-not_finished">
+          <input type="radio" name="work_status" value="not_finished" onchange="toggleReason(this.value)" />
+          <div class="option-content">
+            <div class="option-icon icon-cross"></div>
+            <div class="option-text">
+              <div class="option-title">Not Finished</div>
+              <div class="option-desc">Work is still pending</div>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Reason Box -->
+      <div class="reason-box" id="reasonGroup" style="display:none;">
+        <label for="reason" class="reason-label">Why wasn't the work finished?</label>
+        <textarea
+          id="reason"
+          name="reason"
+          rows="4"
+          class="reason-textarea"
+          placeholder="Describe what's pending and why..."
+        ></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        Submit & Return to Dashboard
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleReason(value) {
+    const group = document.getElementById('reasonGroup');
+    const textarea = document.getElementById('reason');
+    const labelF = document.getElementById('label-finished');
+    const labelNF = document.getElementById('label-not_finished');
+
+    if (value === 'not_finished') {
+      group.style.display = 'block';
+      textarea.required = true;
+      labelNF.classList.add('selected');
+      labelF.classList.remove('selected');
+    } else {
+      group.style.display = 'none';
+      textarea.required = false;
+      textarea.value = '';
+      labelF.classList.add('selected');
+      labelNF.classList.remove('selected');
+    }
+  }
+</script>
+{% endblock %}

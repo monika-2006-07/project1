@@ -1,0 +1,5 @@
+- [x] Redesign `courses.html`
+    - [x] Remove hero background image
+    - [x] Remove course thumbnail images
+    - [x] Update card styling and layout
+- [x] Verify changes

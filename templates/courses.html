@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Explore Courses{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.3);
+        --accent-gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        --surface-color: var(--bg-color);
+        --text-main: var(--text-primary);
+        --text-muted: var(--text-secondary);
+    }
+
+    .courses-wrapper {
+        padding: 3rem 1.5rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .courses-header-minimal {
+        text-align: left;
+        margin-bottom: 4rem;
+        border-left: 6px solid #6366f1;
+        padding-left: 2rem;
+    }
+
+    .header-title-premium {
+        font-size: 3.5rem;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: -0.05em;
+        margin-bottom: 0.5rem;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .header-subtitle-premium {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        max-width: 600px;
+    }
+
+    .courses-grid-minimal {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 2rem;
+    }
+
+    .course-card-minimal {
+        background: white;
+        border-radius: 24px;
+        padding: 2.5rem;
+        position: relative;
+        border: 1px solid #e2e8f0;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
+    }
+
+    .course-card-minimal::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: var(--accent-gradient);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .course-card-minimal:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+        border-color: #6366f1;
+    }
+
+    .course-card-minimal:hover::before {
+        opacity: 1;
+    }
+
+    .course-tag {
+        display: inline-block;
+        padding: 0.4rem 1rem;
+        background: #f1f5f9;
+        color: #475569;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .course-title-minimal {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 1rem;
+        line-height: 1.3;
+    }
+
+    .course-desc-minimal {
+        font-size: 1rem;
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .course-footer-minimal {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+    }
+
+    .btn-action-minimal {
+        padding: 0.8rem 1.8rem;
+        border-radius: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary-minimal {
+        background: #6366f1;
+        color: white !important;
+    }
+
+    .btn-primary-minimal:hover {
+        background: #4f46e5;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-success-minimal {
+        background: #10b981;
+        color: white !important;
+    }
+
+    .btn-success-minimal:hover {
+        background: #059669;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    }
+
+    .progress-compact {
+        width: 100%;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-label-minimal {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-rail {
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-track {
+        height: 100%;
+        background: var(--accent-gradient);
+        border-radius: 10px;
+        transition: width 1s ease-in-out;
+    }
+
+    .empty-state-minimal {
+        text-align: center;
+        padding: 5rem;
+        background: white;
+        border-radius: 30px;
+        border: 2px dashed #e2e8f0;
+        grid-column: 1 / -1;
+    }
+</style>
+
+<div class="courses-wrapper">
+    <header class="courses-header-minimal">
+        <h1 class="header-title-premium">Our Courses</h1>
+        <p class="header-subtitle-premium">Expand your horizons with our curated selection of professional training programs.</p>
+    </header>
+
+    <div class="courses-grid-minimal">
+        {% if courses %}
+            {% for course in courses %}
+            <div class="course-card-minimal">
+                <div>
+                    <span class="course-tag">Professional Path</span>
+                    <h3 class="course-title-minimal">{{ course.title }}</h3>
+                    <p class="course-desc-minimal">
+                        {{ course.description[:180] }}{% if course.description|length > 180 %}...{% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    {% if course.is_enrolled %}
+                        <div class="progress-compact">
+                            <div class="progress-label-minimal">
+                                <span>Completion</span>
+                                <span>{{ course.progress }}%</span>
+                            </div>
+                            <div class="progress-rail">
+                                <div class="progress-track" style="width: {{ course.progress }}%;"></div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('view_course', course_id=course.id) }}" class="btn-action-minimal btn-success-minimal">
+                            Continue Learning
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('view_course', course_id=course.id) }}" class="btn-action-minimal btn-primary-minimal">
+                            Explore Syllabus
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state-minimal">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1.5rem;"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+                <h3 style="color: #64748b;">No courses available at the moment.</h3>
+                <p style="color: #94a3b8;">Please check back later for new content.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

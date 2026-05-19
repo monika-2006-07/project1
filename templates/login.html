@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Log In{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card__header">
+    <div class="logo">&#128274;</div>
+    <h1 class="card__title">Welcome Back</h1>
+    <p class="card__subtitle">Log in to your account</p>
+  </div>
+
+  <!-- Login Type Toggle -->
+  <div class="login-toggle">
+    <button type="button" class="toggle-btn active" data-type="user">
+      <span class="icon">👤</span> User Login
+    </button>
+    <button type="button" class="toggle-btn" data-type="admin">
+      <span class="icon">🔐</span> Admin Login
+    </button>
+  </div>
+
+  <form method="POST" action="{{ url_for('login') }}" novalidate>
+    <input type="hidden" id="login_type" name="login_type" value="user" />
+    
+    <div class="form-group">
+      <label for="identifier">Username or Email</label>
+      <input
+        type="text"
+        id="identifier"
+        name="identifier"
+        placeholder="Enter username or email"
+        required
+        autocomplete="username"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        placeholder="Enter your password"
+        required
+        autocomplete="current-password"
+      />
+    </div>
+
+    <button type="submit" class="btn btn--primary">Log In</button>
+  </form>
+
+  <p class="card__footer" id="signup-link">
+    Don't have an account?
+    <a href="{{ url_for('signup') }}">Sign up</a>
+  </p>
+</div>
+
+<script>
+  // Toggle between User and Admin login
+  const toggleButtons = document.querySelectorAll('.toggle-btn');
+  const loginTypeInput = document.getElementById('login_type');
+  const signupLink = document.getElementById('signup-link');
+  const cardTitle = document.querySelector('.card__title');
+  const cardSubtitle = document.querySelector('.card__subtitle');
+
+  toggleButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      // Remove active class from all buttons
+      toggleButtons.forEach(b => b.classList.remove('active'));
+      
+      // Add active class to clicked button
+      this.classList.add('active');
+      
+      // Update hidden input value
+      const loginType = this.getAttribute('data-type');
+      loginTypeInput.value = loginType;
+      
+      // Update UI based on login type
+      if (loginType === 'admin') {
+        cardTitle.textContent = 'Admin Portal';
+        cardSubtitle.textContent = 'Log in as administrator';
+        signupLink.style.display = 'none';
+      } else {
+        cardTitle.textContent = 'Welcome Back';
+        cardSubtitle.textContent = 'Log in to your account';
+        signupLink.style.display = 'block';
+      }
+    });
+  });
+</script>
+{% endblock %}

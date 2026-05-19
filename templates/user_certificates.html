@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}My Certificates{% endblock %}
+
+{% block content %}
+<div class="user-layout">
+  <header class="user-topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo icon-home-topbar"></div>
+      <div>
+        <h1 class="topbar-title">My Certificates</h1>
+        <p class="topbar-subtitle">Your achievements</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('dashboard') }}" class="btn-logout-compact">Dashboard</a>
+    </div>
+  </header>
+
+  <div class="user-container" style="display: block;">
+    <main class="user-main" style="max-width: 900px; margin: 0 auto; width: 100%;">
+      <div class="content-card">
+        <h2 class="content-title">Earned Certificates</h2>
+        
+        <div class="certificates-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+          {% if certificates %}
+            {% for cert in certificates %}
+            <div class="cert-card" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border-left: 5px solid #10b981;">
+              <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">{{ cert.course_title }}</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Issued on: {{ cert.issued_at[:10] }}</p>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <code style="font-size: 0.8rem; background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px;">{{ cert.certificate_code }}</code>
+                <a href="{{ url_for('view_certificate', code=cert.certificate_code) }}" target="_blank" class="btn-action btn-complete" style="text-decoration: none; font-size: 0.9rem;">View Certificate</a>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="no-data-text" style="padding: 2rem;">No certificates issued yet. Complete a course and wait for admin approval!</p>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}

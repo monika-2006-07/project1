@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Admin - Edit User{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo icon-lock-sidebar"></div>
+      <h2 class="sidebar-title">Admin Panel</h2>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('admin_dashboard') }}#users" class="nav-item active">
+        <span class="nav-icon icon-users-nav"></span>
+        <span>Back to Users</span>
+      </a>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <div class="admin-info">
+        <div class="admin-avatar">{{ session['admin_username'][0].upper() }}</div>
+        <div class="admin-details">
+          <div class="admin-name">{{ session['admin_username'] }}</div>
+          <div class="admin-role">Administrator</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="btn-logout">
+        <span class="icon-logout"></span>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="content-header">
+      <h1 class="page-title">Edit User</h1>
+      <p class="page-subtitle">Editing details for: {{ user.username }}</p>
+    </div>
+
+    <div class="section-compact" style="max-width: 600px;">
+      <h2 class="section-title-compact">User Details</h2>
+      <div class="assign-work-form-compact">
+        <form method="POST" action="{{ url_for('admin_edit_user', user_id=user.id) }}">
+          <div class="form-group">
+            <label for="username">Username *</label>
+            <input type="text" id="username" name="username" value="{{ user.username }}" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" value="{{ user.email }}" required />
+          </div>
+          
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="password">New Password (leave blank to keep current)</label>
+            <input type="password" id="password" name="password" placeholder="Enter new password if changing" />
+          </div>
+          
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn--primary">Save Changes</button>
+            <a href="{{ url_for('admin_dashboard') }}#users" class="btn" style="background-color: var(--border-color); color: var(--text-primary); text-decoration: none; display: inline-block; text-align: center;">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

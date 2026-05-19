@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Manage Certificates{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo icon-lock-sidebar"></div>
+      <h2 class="sidebar-title">Admin Panel</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+        <span class="nav-icon icon-chart-nav"></span>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('admin_courses') }}" class="nav-item">
+        <span class="nav-icon icon-clipboard-nav"></span>
+        <span>Courses</span>
+      </a>
+      <a href="{{ url_for('admin_certificates') }}" class="nav-item active">
+        <span class="nav-icon icon-calendar-nav"></span>
+        <span>Certificates</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="btn-logout">
+        <span class="icon-logout"></span>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="content-header">
+      <h1 class="page-title">Issue Certificates</h1>
+      <p class="page-subtitle">Award students who have completed courses</p>
+    </div>
+
+    <div class="section-compact">
+      <h2 class="section-title-compact">Course Completions</h2>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Course</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if enrollments %}
+              {% for e in enrollments %}
+              <tr>
+                <td><strong>{{ e.username }}</strong><br><small>{{ e.email }}</small></td>
+                <td>{{ e.course_title }}</td>
+                <td>{{ e.completed_lessons }} / {{ e.total_lessons }}</td>
+                <td>
+                  {% if e.cert_id %}
+                    <span class="badge badge--success">✓ Issued</span>
+                  {% else %}
+                    <span class="badge badge--warning">Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if not e.cert_id %}
+                    <form method="POST" action="{{ url_for('issue_certificate', user_id=e.user_id, course_id=e.course_id) }}">
+                      <button type="submit" class="btn btn--primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Issue Certificate</button>
+                    </form>
+                  {% else %}
+                    <span style="color: #6b7280; font-size: 0.9rem;">Certificate generated</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="no-data">No 100% course completions found yet.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
