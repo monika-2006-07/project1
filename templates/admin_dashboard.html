@@ -88,59 +88,62 @@
       <p class="page-subtitle">Welcome back, {{ admin_username }}!</p>
     </div>
 
-    <!-- Statistics Cards -->
-    <div id="overview" class="stats-grid-compact">
-      <div class="stat-card-compact">
-        <i data-lucide="users" class="stat-icon-compact"></i>
-        <div class="stat-content-compact">
-          <div class="stat-label-compact">Total Users</div>
-          <div class="stat-value-compact">{{ users|length }}</div>
+    <!-- Overview Section -->
+    <div id="overview" class="tab-content">
+      <!-- Statistics Cards -->
+      <div class="stats-grid-compact">
+        <div class="stat-card-compact">
+          <i data-lucide="users" class="stat-icon-compact"></i>
+          <div class="stat-content-compact">
+            <div class="stat-label-compact">Total Users</div>
+            <div class="stat-value-compact">{{ users|length }}</div>
+          </div>
+        </div>
+        <div class="stat-card-compact">
+          <i data-lucide="bar-chart-3" class="stat-icon-compact"></i>
+          <div class="stat-content-compact">
+            <div class="stat-label-compact">Attendance</div>
+            <div class="stat-value-compact">{{ attendance_records|length }}</div>
+          </div>
+        </div>
+        <div class="stat-card-compact">
+          <i data-lucide="clipboard-list" class="stat-icon-compact"></i>
+          <div class="stat-content-compact">
+            <div class="stat-label-compact">Assignments</div>
+            <div class="stat-value-compact">{{ work_assignments|length }}</div>
+          </div>
+        </div>
+        <div class="stat-card-compact">
+          <i data-lucide="history" class="stat-icon-compact"></i>
+          <div class="stat-content-compact">
+            <div class="stat-label-compact">Pending</div>
+            <div class="stat-value-compact">{{ work_assignments|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+          </div>
         </div>
       </div>
-      <div class="stat-card-compact">
-        <i data-lucide="bar-chart-3" class="stat-icon-compact"></i>
-        <div class="stat-content-compact">
-          <div class="stat-label-compact">Attendance</div>
-          <div class="stat-value-compact">{{ attendance_records|length }}</div>
-        </div>
-      </div>
-      <div class="stat-card-compact">
-        <i data-lucide="clipboard-list" class="stat-icon-compact"></i>
-        <div class="stat-content-compact">
-          <div class="stat-label-compact">Assignments</div>
-          <div class="stat-value-compact">{{ work_assignments|length }}</div>
-        </div>
-      </div>
-      <div class="stat-card-compact">
-        <i data-lucide="history" class="stat-icon-compact"></i>
-        <div class="stat-content-compact">
-          <div class="stat-label-compact">Pending</div>
-          <div class="stat-value-compact">{{ work_assignments|selectattr('status', 'equalto', 'pending')|list|length }}</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Active Workers Section -->
-    <div class="active-workers-box" style="background: white; padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
-      <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #111827; display: flex; align-items: center; gap: 0.5rem;">
-        <span style="color: #10b981; font-size: 1.2rem;">●</span> Active Workers Now
-      </h3>
-      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-        {% set active_users = users | selectattr('is_punched_in', 'equalto', true) | list %}
-        {% if active_users %}
-          {% for user in active_users %}
-            <span class="badge badge--success" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">
-              {{ user.username }}
-            </span>
-          {% endfor %}
-        {% else %}
-          <span style="color: #6b7280; font-size: 0.9rem; font-style: italic;">No one is currently punched in.</span>
-        {% endif %}
+      <!-- Active Workers Section -->
+      <div class="active-workers-box" style="background: white; padding: 1.5rem; border-radius: 12px; margin-top: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e5e7eb;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #111827; display: flex; align-items: center; gap: 0.5rem;">
+          <span style="color: #10b981; font-size: 1.2rem;">●</span> Active Workers Now
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          {% set active_users = users | selectattr('is_punched_in', 'equalto', true) | list %}
+          {% if active_users %}
+            {% for user in active_users %}
+              <span class="badge badge--success" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">
+                {{ user.username }}
+              </span>
+            {% endfor %}
+          {% else %}
+            <span style="color: #6b7280; font-size: 0.9rem; font-style: italic;">No one is currently punched in.</span>
+          {% endif %}
+        </div>
       </div>
     </div>
 
   <!-- Assign Work Section -->
-  <div id="assign" class="section-compact">
+  <div id="assign" class="section-compact tab-content">
     <h2 class="section-title-compact">Assign Work</h2>
     <div class="assign-work-form-compact">
       <form method="POST" action="{{ url_for('assign_work') }}">
@@ -186,7 +189,7 @@
   </div>
 
   <!-- Work Assignments Section -->
-  <div id="assignments" class="section-compact">
+  <div id="assignments" class="section-compact tab-content">
     <h2 class="section-title-compact">Work Assignments ({{ work_assignments|length }})</h2>
     <div class="table-container">
       <table class="data-table">
@@ -258,7 +261,7 @@
   </div>
 
   <!-- Users Section -->
-  <div id="users" class="section-compact">
+  <div id="users" class="section-compact tab-content">
     <h2 class="section-title-compact">Registered Users ({{ users|length }})</h2>
 
     <div class="assign-work-form-compact" style="margin-bottom: 2rem;">
@@ -320,7 +323,7 @@
   </div>
 
   <!-- Attendance Records Section -->
-  <div id="attendance" class="section-compact">
+  <div id="attendance" class="section-compact tab-content">
     <h2 class="section-title-compact">Attendance Records ({{ attendance_records|length }})</h2>
     
     <!-- Filter Section -->
@@ -396,7 +399,7 @@
   </div>
 
   <!-- Total Work Duration Section -->
-  <div id="duration" class="section-compact">
+  <div id="duration" class="section-compact tab-content">
     <h2 class="section-title-compact">Total Work Duration by Employee</h2>
     <div class="work-stats-grid">
       {% if user_work_stats %}
@@ -438,7 +441,7 @@
   </div>
 
   <!-- Course Enrollments Tracking Section -->
-  <div id="enrollments" class="section-compact">
+  <div id="enrollments" class="section-compact tab-content">
     <h2 class="section-title-compact">Course Enrollments & Progress</h2>
     <div class="table-container">
       <table class="data-table">
@@ -482,4 +485,71 @@
   </div>
   </main>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
+    const tabContents = document.querySelectorAll(".tab-content");
+    const pageTitle = document.querySelector(".page-title");
+    const pageSubtitle = document.querySelector(".page-subtitle");
+
+    function switchTab(hash) {
+      // If hash is empty, or doesn't start with '#', default to overview
+      if (!hash || !hash.startsWith("#")) {
+        hash = "#overview";
+      }
+
+      // Find if we have tab content for this hash
+      const targetContent = document.querySelector(hash);
+      if (!targetContent) return;
+
+      // Hide all tabs
+      tabContents.forEach(content => {
+        content.style.display = "none";
+      });
+
+      // Show active tab
+      targetContent.style.display = "block";
+
+      // Update active nav class
+      navItems.forEach(item => {
+        const href = item.getAttribute("href");
+        if (href === hash) {
+          item.classList.add("active");
+
+          // Update main header title dynamically
+          const spanLabel = item.querySelector("span");
+          if (spanLabel && pageTitle) {
+            const labelText = spanLabel.textContent;
+            pageTitle.textContent = "Dashboard - " + labelText;
+            if (pageSubtitle) {
+              pageSubtitle.textContent = "Manage and monitor your organization's " + labelText.toLowerCase() + " in real-time.";
+            }
+          }
+        } else {
+          item.classList.remove("active");
+        }
+      });
+    }
+
+    // Intercept navbar link clicks starting with '#'
+    navItems.forEach(item => {
+      const href = item.getAttribute("href");
+      if (href && href.startsWith("#")) {
+        item.addEventListener("click", function(e) {
+          e.preventDefault();
+          window.location.hash = href;
+        });
+      }
+    });
+
+    // Listen for hash changes
+    window.addEventListener("hashchange", function() {
+      switchTab(window.location.hash);
+    });
+
+    // Initial run
+    switchTab(window.location.hash);
+  });
+</script>
 {% endblock %}
