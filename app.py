@@ -179,6 +179,19 @@ def init_db():
                 ("admin", "admin@example.com", hash_password("admin123")),
             )
         
+        # Settings Table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('academy_name', 'Learning Management Academy')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('instructor_name', 'Course Instructor')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('instructor_signature', 'Course Instructor')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('director_name', 'Academic Director')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('director_signature', 'Academic Director')")
+        
         conn.commit()
 
 
@@ -1582,7 +1595,33 @@ def admin_certificates():
             if e["total_lessons"] > 0 and e["total_lessons"] == e["completed_lessons"]:
                 completed_enrollments.append(e)
 
-    return render_template("admin_certificates.html", enrollments=completed_enrollments)
+        settings_rows = conn.execute("SELECT * FROM settings").fetchall()
+        settings = {row["key"]: row["value"] for row in settings_rows}
+
+    return render_template("admin_certificates.html", enrollments=completed_enrollments, settings=settings)
+
+
+@app.route("/admin/settings/certificate", methods=["POST"])
+def update_certificate_settings():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+        
+    academy_name = request.form.get("academy_name", "").strip()
+    instructor_name = request.form.get("instructor_name", "").strip()
+    instructor_signature = request.form.get("instructor_signature", "").strip()
+    director_name = request.form.get("director_name", "").strip()
+    director_signature = request.form.get("director_signature", "").strip()
+    
+    with get_db() as conn:
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'academy_name'", (academy_name,))
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'instructor_name'", (instructor_name,))
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'instructor_signature'", (instructor_signature,))
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'director_name'", (director_name,))
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'director_signature'", (director_signature,))
+        conn.commit()
+        
+    flash("Certificate settings updated successfully!", "success")
+    return redirect(url_for("admin_certificates"))
 
 
 @app.route("/admin/issue_certificate/<int:user_id>/<int:course_id>", methods=["POST"])
@@ -1632,12 +1671,15 @@ def view_certificate(code):
             JOIN courses c ON cert.course_id = c.id
             WHERE cert.certificate_code = ?
         """, (code,)).fetchone()
+        
+        settings_rows = conn.execute("SELECT * FROM settings").fetchall()
+        settings = {row["key"]: row["value"] for row in settings_rows}
     
     if not cert:
         flash("Invalid certificate code.", "error")
         return redirect(url_for("index"))
     
-    return render_template("certificate_view.html", cert=cert)
+    return render_template("certificate_view.html", cert=cert, settings=settings)
 
 
 # ── User Course Creation Routes ─────────────────────────────

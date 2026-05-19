@@ -38,6 +38,49 @@
       <p class="page-subtitle">Award students who have completed courses</p>
     </div>
 
+    <!-- Global Certificate Settings Card -->
+    <div class="section-compact" style="margin-bottom: 2rem;">
+      <h2 class="section-title-compact">Global Certificate Settings</h2>
+      <div class="assign-work-form-compact" style="background: white; padding: 1.5rem 2rem; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+        <form method="POST" action="{{ url_for('update_certificate_settings') }}">
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="academy_name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Academy Name</label>
+            <input type="text" id="academy_name" name="academy_name" value="{{ settings.academy_name }}" placeholder="Learning Management Academy" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; box-sizing: border-box;" required />
+          </div>
+
+          <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <!-- Instructor Section -->
+            <div style="flex: 1; min-width: 280px; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9; box-sizing: border-box;">
+              <h3 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">👨‍🏫 Instructor Details</h3>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="instructor_name" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Instructor Title / Name</label>
+                <input type="text" id="instructor_name" name="instructor_name" value="{{ settings.instructor_name }}" placeholder="Course Instructor" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
+              </div>
+              <div class="form-group">
+                <label for="instructor_signature" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Instructor Cursive Signature</label>
+                <input type="text" id="instructor_signature" name="instructor_signature" value="{{ settings.instructor_signature }}" placeholder="Instructor Cursive Signature" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
+              </div>
+            </div>
+
+            <!-- Director Section -->
+            <div style="flex: 1; min-width: 280px; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9; box-sizing: border-box;">
+              <h3 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">🎓 Academic Director Details</h3>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="director_name" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Academic Director Title / Name</label>
+                <input type="text" id="director_name" name="director_name" value="{{ settings.director_name }}" placeholder="Academic Director" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
+              </div>
+              <div class="form-group">
+                <label for="director_signature" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Director Cursive Signature</label>
+                <input type="text" id="director_signature" name="director_signature" value="{{ settings.director_signature }}" placeholder="Director Cursive Signature" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn--primary" style="font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 8px;">💾 Save Certificate Settings</button>
+        </form>
+      </div>
+    </div>
+
     <div class="section-compact">
       <h2 class="section-title-compact">Course Completions</h2>
       <div class="table-container">
