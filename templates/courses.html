@@ -193,9 +193,15 @@
 </style>
 
 <div class="courses-wrapper">
-    <header class="courses-header-minimal">
-        <h1 class="header-title-premium">Our Courses</h1>
-        <p class="header-subtitle-premium">Expand your horizons with our curated selection of professional training programs.</p>
+    <header class="courses-header-minimal" style="display: flex; justify-content: space-between; align-items: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 4rem; border-left: 6px solid #6366f1; padding-left: 2rem;">
+        <div>
+            <h1 class="header-title-premium" style="margin: 0;">Our Courses</h1>
+            <p class="header-subtitle-premium" style="margin-top: 0.5rem; margin-bottom: 0;">Expand your horizons with our curated selection of professional training programs.</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn-action-minimal" style="background: white; border: 1px solid #e2e8f0; color: #4f46e5; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 0.8rem 1.5rem; border-radius: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); transition: all 0.3s; text-decoration: none;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #4f46e5;"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Back to Dashboard
+        </a>
     </header>
 
     <div class="courses-grid-minimal">
