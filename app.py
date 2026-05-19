@@ -560,6 +560,37 @@ DELETE FROM students WHERE name = 'John';</code></pre>"""
         conn.commit()
 
 
+def convert_to_youtube_embed(url):
+    if not url:
+        return None
+    
+    url = url.strip()
+    # If it is already an embed link, return as is
+    if "youtube.com/embed/" in url:
+        return url
+        
+    # Standard: youtube.com/watch?v=VIDEO_ID
+    if "youtube.com/watch" in url:
+        import urllib.parse as urlparse
+        parsed = urlparse.urlparse(url)
+        video_id = urlparse.parse_qs(parsed.query).get('v')
+        if video_id:
+            return f"https://www.youtube.com/embed/{video_id[0]}"
+            
+    # Shortened: youtu.be/VIDEO_ID
+    if "youtu.be/" in url:
+        video_id = url.split("youtu.be/")[-1].split("?")[0]
+        if video_id:
+            return f"https://www.youtube.com/embed/{video_id}"
+            
+    # YouTube Shorts: youtube.com/shorts/VIDEO_ID
+    if "youtube.com/shorts/" in url:
+        video_id = url.split("youtube.com/shorts/")[-1].split("?")[0]
+        if video_id:
+            return f"https://www.youtube.com/embed/{video_id}"
+            
+    return url
+
 
 # ── auth routes ────────────────────────────────────────────
 @app.route("/")
@@ -1239,7 +1270,7 @@ def admin_lessons(course_id):
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         content = request.form.get("content", "").strip()
-        video_url = request.form.get("video_url", "").strip()
+        video_url = convert_to_youtube_embed(request.form.get("video_url", "").strip())
         order_index = request.form.get("order_index", 0)
 
         if not title:
@@ -1297,7 +1328,7 @@ def edit_lesson(lesson_id):
         if request.method == "POST":
             title = request.form.get("title", "").strip()
             content = request.form.get("content", "").strip()
-            video_url = request.form.get("video_url", "").strip()
+            video_url = convert_to_youtube_embed(request.form.get("video_url", "").strip())
             order_index = request.form.get("order_index", 0)
 
             if not title:
@@ -1676,7 +1707,7 @@ def user_manage_lessons(course_id):
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         content = request.form.get("content", "").strip()
-        video_url = request.form.get("video_url", "").strip()
+        video_url = convert_to_youtube_embed(request.form.get("video_url", "").strip())
         order_index = request.form.get("order_index", 0)
 
         if not title:
