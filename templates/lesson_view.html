@@ -103,13 +103,17 @@
             {% endif %}
 
             {% if next_lesson_id %}
-              <a href="{{ url_for('view_lesson', lesson_id=next_lesson_id) }}" class="btn btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
-                Next Lesson <i data-lucide="arrow-right" size="20"></i>
-              </a>
+              <form method="POST" action="{{ url_for('complete_and_next_lesson', lesson_id=lesson.id, next_lesson_id=next_lesson_id) }}">
+                <button type="submit" class="btn btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;">
+                  Next Lesson <i data-lucide="arrow-right" size="20"></i>
+                </button>
+              </form>
             {% else %}
-               <a href="{{ url_for('view_course', course_id=lesson.course_id) }}" class="btn btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem; background: var(--accent-color);">
-                <i data-lucide="flag" size="20"></i> Finish Course
-               </a>
+              <form method="POST" action="{{ url_for('complete_lesson', lesson_id=lesson.id) }}">
+                <button type="submit" class="btn btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem; background: var(--accent-color); display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;">
+                  <i data-lucide="flag" size="20"></i> Finish Course
+                </button>
+              </form>
             {% endif %}
           </div>
         </div>

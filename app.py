@@ -1503,6 +1503,26 @@ def complete_lesson(lesson_id):
     return redirect(url_for("courses"))
 
 
+@app.route("/lesson/complete-and-next/<int:lesson_id>/<int:next_lesson_id>", methods=["POST"])
+def complete_and_next_lesson(lesson_id, next_lesson_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    with get_db() as conn:
+        try:
+            conn.execute(
+                "INSERT INTO user_lesson_progress (user_id, lesson_id) VALUES (?, ?)",
+                (user_id, lesson_id)
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            pass # Already completed
+            
+    return redirect(url_for("view_lesson", lesson_id=next_lesson_id))
+
+
+
 
 
 
