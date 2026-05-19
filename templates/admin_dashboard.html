@@ -288,37 +288,87 @@
       </form>
     </div>
 
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Registered At</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+    <!-- Interactive Master-Detail Panel -->
+    <style>
+      .master-user-item:hover {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+      }
+      .master-user-item.active-master {
+        background: #e0e7ff !important;
+        border-color: #6366f1 !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+      }
+    </style>
+
+    <div style="display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap;">
+      <!-- Master: Left Column (User List) -->
+      <div style="flex: 1; min-width: 280px; max-width: 380px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 0; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;">Select Employee</h3>
+        <div class="user-master-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
           {% if users %}
             {% for user in users %}
-            <tr>
-              <td><strong>#{{ user.id }}</strong></td>
-              <td><strong>{{ user.username }}</strong></td>
-              <td>{{ user.email }}</td>
-              <td>{{ user.created_at }}</td>
-              <td>
-                <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" class="btn btn--primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; border-radius: 4px; text-decoration: none;">Edit</a>
-              </td>
-            </tr>
+              <div class="master-user-item {% if loop.first %}active-master{% endif %}" data-user-id="{{ user.id }}" style="padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid #f1f5f9; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; background: #fafafa;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #e0e7ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;">
+                  {{ user.username[0].upper() }}
+                </div>
+                <div style="flex-grow: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: 0.95rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ user.username }}</div>
+                  <div style="font-size: 0.8rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ user.email }}</div>
+                </div>
+              </div>
             {% endfor %}
           {% else %}
-            <tr>
-              <td colspan="5" class="no-data">No users registered yet.</td>
-            </tr>
+            <div style="text-align: center; color: #64748b; font-size: 0.9rem; padding: 2rem 0;">No employees found.</div>
           {% endif %}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      <!-- Detail: Right Column (Selected User Profile Card) -->
+      <div style="flex: 2; min-width: 320px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; min-height: 380px;">
+        {% if users %}
+          {% for user in users %}
+            <div class="user-detail-panel" id="user-detail-{{ user.id }}" style="display: {% if loop.first %}block{% else %}none{% endif %};">
+              <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap;">
+                <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 2rem; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.2);">
+                  {{ user.username[0].upper() }}
+                </div>
+                <div>
+                  <h3 style="font-size: 1.5rem; font-weight: 800; color: #1e293b; margin: 0;">{{ user.username }}</h3>
+                  <p style="color: #64748b; margin: 4px 0 0 0; font-size: 0.95rem; font-weight: 500;">{{ user.email }}</p>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #f1f5f9;">
+                  <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;">Employee ID</div>
+                  <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b;">#{{ user.id }}</div>
+                </div>
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #f1f5f9;">
+                  <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;">Date Registered</div>
+                  <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b;">{{ user.created_at }}</div>
+                </div>
+              </div>
+
+              <!-- Quick actions for this specific user -->
+              <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: auto; padding-top: 1.5rem; border-top: 1px solid #f1f5f9;">
+                <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" class="btn btn--primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 10px; text-decoration: none;">
+                  ✏️ Edit Profile
+                </a>
+                <a href="{{ url_for('admin_dashboard') }}?filter_user={{ user.id }}#attendance" class="btn" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 10px; text-decoration: none; transition: all 0.2s;">
+                  📅 View Attendance
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #94a3b8; text-align: center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <p style="font-weight: 600; font-size: 1.1rem; margin: 0;">No User Selected</p>
+            <p style="font-size: 0.9rem; margin-top: 4px;">Select a user from the left pane to view their comprehensive details.</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -546,6 +596,29 @@
     // Listen for hash changes
     window.addEventListener("hashchange", function() {
       switchTab(window.location.hash);
+    });
+
+    // Master-Detail User Panel Toggle
+    const masterItems = document.querySelectorAll(".master-user-item");
+    const detailPanels = document.querySelectorAll(".user-detail-panel");
+
+    masterItems.forEach(item => {
+      item.addEventListener("click", function() {
+        // Remove active class from all items
+        masterItems.forEach(i => i.classList.remove("active-master"));
+        // Add active class to clicked item
+        item.classList.add("active-master");
+
+        // Hide all detail panels
+        detailPanels.forEach(p => p.style.display = "none");
+
+        // Show clicked panel
+        const userId = item.getAttribute("data-user-id");
+        const activePanel = document.getElementById("user-detail-" + userId);
+        if (activePanel) {
+          activePanel.style.display = "block";
+        }
+      });
     });
 
     // Initial run
