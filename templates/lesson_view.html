@@ -89,17 +89,13 @@
           </div>
 
           <div style="margin-top: 4rem; padding-top: 2.5rem; border-top: 2px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; gap: 2rem; flex-wrap: wrap;">
-            {% if not is_completed %}
-              <form method="POST" action="{{ url_for('complete_lesson', lesson_id=lesson.id) }}">
-                <button type="submit" class="btn btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem; background: var(--secondary-color); color: white;">
-                  <i data-lucide="check-circle" size="20"></i> Mark as Completed
-                </button>
-              </form>
-            {% else %}
-              <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--secondary-color); font-weight: 700; font-size: 1.25rem;">
-                <i data-lucide="check-circle-2" size="28"></i>
+            {% if is_completed %}
+              <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--secondary-color); font-weight: 700; font-size: 1.1rem;">
+                <i data-lucide="check-circle-2" size="24"></i>
                 Lesson Completed
               </div>
+            {% else %}
+              <div></div>
             {% endif %}
 
             {% if next_lesson_id %}
