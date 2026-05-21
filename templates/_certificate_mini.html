@@ -1,0 +1,15 @@
+{% macro render_certificate(preview) %}
+<div class="cert-mini" style="position:relative;width:100%;aspect-ratio:{{ preview.aspectRatio }};background:#fff;overflow:hidden;border-radius:8px;">
+  <img src="{{ preview.templateUrl }}" alt="Certificate" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;" />
+  {% set field_keys = ['studentName', 'courseName', 'completionDate', 'certificateId', 'instructorName'] %}
+  {% for key in field_keys %}
+    {% set cfg = preview.fields[key] if preview.fields and key in preview.fields else none %}
+    {% if cfg %}
+      {% set text = preview.studentName if key == 'studentName' else (preview.courseName if key == 'courseName' else (preview.completionDate if key == 'completionDate' else (preview.certificateCode if key == 'certificateId' else preview.instructorName))) %}
+      <p style="position:absolute;top:{{ cfg.top }}%;left:{{ cfg.left }}%;font-size:{{ cfg.fontSize }};font-family:{{ cfg.fontFamily }};font-weight:{{ cfg.fontWeight }};color:{{ cfg.color }};text-align:{{ cfg.textAlign or 'center' }};transform:{{ cfg.transform or 'translateX(-50%)' }};{% if cfg.maxWidth %}max-width:{{ cfg.maxWidth }};{% endif %}{% if cfg.lineHeight %}line-height:{{ cfg.lineHeight }};{% endif %}{% if cfg.letterSpacing %}letter-spacing:{{ cfg.letterSpacing }};{% endif %}margin:0;padding:0;z-index:2;white-space:{% if key == 'studentName' %}normal{% else %}nowrap{% endif %};">
+        {{ text }}
+      </p>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endmacro %}

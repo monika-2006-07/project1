@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_certificate_mini.html" import render_certificate %}
 {% block title %}My Certificates{% endblock %}
 
 {% block content %}
@@ -17,25 +18,27 @@
   </header>
 
   <div class="user-container" style="display: block;">
-    <main class="user-main" style="max-width: 900px; margin: 0 auto; width: 100%;">
+    <main class="user-main" style="max-width: 1100px; margin: 0 auto; width: 100%;">
       <div class="content-card">
         <h2 class="content-title">Earned Certificates</h2>
-        
-        <div class="certificates-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-          {% if certificates %}
-            {% for cert in certificates %}
-            <div class="cert-card" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border-left: 5px solid #10b981;">
-              <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">{{ cert.course_title }}</h3>
-              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Issued on: {{ cert.issued_at[:10] }}</p>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <code style="font-size: 0.8rem; background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px;">{{ cert.certificate_code }}</code>
-                <a href="{{ url_for('view_certificate', code=cert.certificate_code) }}" target="_blank" class="btn-action btn-complete" style="text-decoration: none; font-size: 0.9rem;">View Certificate</a>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">Preview matches the template uploaded by your administrator.</p>
+
+        <div class="certificates-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+          {% if certificate_previews %}
+            {% for preview in certificate_previews %}
+            <div class="cert-card" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <h3 style="margin: 0 0 0.75rem 0; color: var(--text-primary); font-size: 1rem;">{{ preview.courseName }}</h3>
+              {{ render_certificate(preview) }}
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.75rem 0 0.5rem;">Issued: {{ preview.completionDate }}</p>
+              <code style="font-size: 0.75rem; background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 4px;">{{ preview.certificateCode }}</code>
+              <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                <a href="{{ url_for('view_certificate', code=preview.certificateCode) }}" target="_blank" class="btn-action btn-complete" style="text-decoration: none; font-size: 0.9rem;">View Certificate</a>
+                <a href="{{ url_for('view_certificate', code=preview.certificateCode) }}?download=1" target="_blank" class="btn-action" style="text-decoration: none; font-size: 0.9rem; background: #1e293b; color: white; padding: 0.5rem 1rem; border-radius: 8px;">Download PDF</a>
               </div>
             </div>
             {% endfor %}
           {% else %}
-            <p class="no-data-text" style="padding: 2rem;">No certificates issued yet. Complete a course and wait for admin approval!</p>
+            <p class="no-data-text" style="padding: 2rem; grid-column: 1 / -1;">No certificates yet. Complete every lesson in a course to earn your certificate automatically.</p>
           {% endif %}
         </div>
       </div>

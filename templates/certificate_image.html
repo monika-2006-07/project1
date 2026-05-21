@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate — {{ cert.username }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print { .no-print { display: none !important; } body { background: white !important; } }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900 flex flex-col items-center py-8 px-4">
+    <div class="no-print flex flex-wrap gap-3 mb-6 justify-center">
+        <a href="{{ image_url }}" download="certificate-{{ certificate_code }}.jpg"
+           class="inline-flex items-center rounded-full bg-amber-600 hover:bg-amber-500 text-white font-semibold px-6 py-3 shadow-lg">
+            Download image
+        </a>
+        <button type="button" onclick="window.print()"
+            class="inline-flex items-center rounded-full bg-slate-700 hover:bg-slate-600 text-white font-semibold px-6 py-3">
+            Print
+        </button>
+        <a href="{{ url_for('my_certificates') }}"
+            class="inline-flex items-center rounded-full border border-slate-600 text-slate-300 hover:text-white px-5 py-3">
+            My certificates
+        </a>
+    </div>
+
+    <div class="w-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden certificate-print-target">
+        <img id="cert-image" src="{{ image_url }}" alt="Certificate for {{ cert.username }}"
+             class="w-full h-auto block" crossorigin="anonymous" />
+    </div>
+    <p class="no-print mt-3 text-slate-500 text-xs font-mono">ID: {{ certificate_code }}</p>
+</body>
+</html>

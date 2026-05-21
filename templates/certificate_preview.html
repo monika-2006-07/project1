@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate — {{ certificate_data.studentName }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@400;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+    <style>
+        @media print {
+            body { background: white !important; }
+            .no-print { display: none !important; }
+            .certificate-print-target {
+                max-width: 100% !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="certificate-root"></div>
+
+    <script>
+        window.__CERTIFICATE_DATA__ = {{ certificate_json | safe }};
+        window.__CERTIFICATE_EMBED__ = {{ 'true' if embed_mode else 'false' }};
+    </script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/certificate-preview.js') }}?v=4"></script>
+</body>
+</html>

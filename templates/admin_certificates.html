@@ -3,7 +3,6 @@
 
 {% block content %}
 <div class="admin-layout">
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo icon-lock-sidebar"></div>
@@ -31,58 +30,85 @@
     </div>
   </aside>
 
-  <!-- Main Content -->
   <main class="main-content">
-    <div class="content-header">
-      <h1 class="page-title">Issue Certificates</h1>
-      <p class="page-subtitle">Award students who have completed courses</p>
+    <div class="content-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1 class="page-title">Certificates</h1>
+        <p class="page-subtitle">Upload your certificate design — students see this exact image</p>
+      </div>
+      <form method="POST" action="{{ url_for('toggle_certificates') }}" style="margin:0;">
+        {% if certificates_enabled %}
+          <button type="submit" style="background:#ef4444; color:white; border:none; padding:0.6rem 1.4rem; border-radius:8px; font-size:0.95rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:0.5rem;">
+            <i data-lucide="x-circle" size="18"></i> Disable Certificates
+          </button>
+        {% else %}
+          <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <span style="background:#fee2e2; color:#b91c1c; padding:0.4rem 1rem; border-radius:6px; font-weight:600; font-size:0.9rem;">⚠ Certificates are currently DISABLED</span>
+            <button type="submit" style="background:#22c55e; color:white; border:none; padding:0.6rem 1.4rem; border-radius:8px; font-size:0.95rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="check-circle" size="18"></i> Enable Certificates
+            </button>
+          </div>
+        {% endif %}
+      </form>
     </div>
 
-    <!-- Global Certificate Settings Card -->
     <div class="section-compact" style="margin-bottom: 2rem;">
-      <h2 class="section-title-compact">Global Certificate Settings</h2>
-      <div class="assign-work-form-compact" style="background: white; padding: 1.5rem 2rem; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-        <form method="POST" action="{{ url_for('update_certificate_settings') }}">
-          <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label for="academy_name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Academy Name</label>
-            <input type="text" id="academy_name" name="academy_name" value="{{ settings.academy_name }}" placeholder="Learning Management Academy" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; box-sizing: border-box;" required />
+      <h2 class="section-title-compact">Certificate Template</h2>
+      <div class="assign-work-form-compact" style="background: white; padding: 1.5rem 2rem; border-radius: 12px; border: 1px solid #e5e7eb;">
+
+        <div style="background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+          <strong style="color: #047857; display: block; margin-bottom: 0.35rem;">✓ Correct upload format</strong>
+          <p style="margin: 0; font-size: 0.85rem; color: #065f46; line-height: 1.5;">
+            Export your Canva certificate as <strong>PNG</strong> or <strong>JPG</strong> (Download → PNG recommended).
+            Upload that file below. Do <strong>not</strong> paste Canva share links or random website URLs — they will not display.
+          </p>
+        </div>
+
+        {% if template_preview_url %}
+        <div style="margin-bottom: 1.5rem;">
+          <p style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem;">Current template (what students see)</p>
+          <div style="max-width: 520px; border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #f8fafc;">
+            <img src="{{ template_preview_url }}" alt="Certificate template preview" style="width: 100%; height: auto; display: block;" />
+          </div>
+          {% if active_template_file %}
+          <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">File: <code>{{ active_template_file }}</code></p>
+          {% endif %}
+        </div>
+        {% else %}
+        <p style="color: #b45309; font-weight: 600; margin-bottom: 1rem;">No template uploaded yet. Upload an image below.</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('update_certificate_settings') }}" enctype="multipart/form-data">
+          <input type="hidden" name="certificate_theme" value="template" />
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="custom_background" style="font-weight: 700; font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Upload / replace certificate image (required when changing design)</label>
+            <input type="file" id="custom_background" name="custom_background" accept="image/png,image/jpeg,image/webp" style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px dashed #94a3b8; background: #fff;" />
+            <p style="font-size: 0.75rem; color: #64748b; margin: 0.35rem 0 0;">Landscape certificate (~1600×1100 px) works best. Leave empty to keep the current template and only update names below.</p>
           </div>
 
-          <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-            <!-- Instructor Section -->
-            <div style="flex: 1; min-width: 280px; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9; box-sizing: border-box;">
-              <h3 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">👨‍🏫 Instructor Details</h3>
-              <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="instructor_name" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Instructor Title / Name</label>
-                <input type="text" id="instructor_name" name="instructor_name" value="{{ settings.instructor_name }}" placeholder="Course Instructor" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
-              </div>
-              <div class="form-group">
-                <label for="instructor_signature" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Instructor Cursive Signature</label>
-                <input type="text" id="instructor_signature" name="instructor_signature" value="{{ settings.instructor_signature }}" placeholder="Instructor Cursive Signature" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
-              </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div>
+              <label for="instructor_name" style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Instructor name (on certificate)</label>
+              <input type="text" id="instructor_name" name="instructor_name" value="{{ settings.instructor_name }}" required style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;" />
             </div>
-
-            <!-- Director Section -->
-            <div style="flex: 1; min-width: 280px; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9; box-sizing: border-box;">
-              <h3 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">🎓 Academic Director Details</h3>
-              <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="director_name" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Academic Director Title / Name</label>
-                <input type="text" id="director_name" name="director_name" value="{{ settings.director_name }}" placeholder="Academic Director" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
-              </div>
-              <div class="form-group">
-                <label for="director_signature" style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 0.25rem;">Director Cursive Signature</label>
-                <input type="text" id="director_signature" name="director_signature" value="{{ settings.director_signature }}" placeholder="Director Cursive Signature" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;" required />
-              </div>
+            <div>
+              <label for="academy_name" style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Academy name (optional)</label>
+              <input type="text" id="academy_name" name="academy_name" value="{{ settings.academy_name }}" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;" />
             </div>
           </div>
 
-          <button type="submit" class="btn btn--primary" style="font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 8px;">💾 Save Certificate Settings</button>
+          <input type="hidden" name="instructor_signature" value="{{ settings.instructor_signature }}" />
+          <input type="hidden" name="director_name" value="{{ settings.director_name }}" />
+          <input type="hidden" name="director_signature" value="{{ settings.director_signature }}" />
+
+          <button type="submit" class="btn btn--primary" style="font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 8px;">Save certificate settings</button>
         </form>
       </div>
     </div>
 
     <div class="section-compact">
-      <h2 class="section-title-compact">Course Completions</h2>
+      <h2 class="section-title-compact">Course completions</h2>
       <div class="table-container">
         <table class="data-table">
           <thead>
@@ -103,24 +129,24 @@
                 <td>{{ e.completed_lessons }} / {{ e.total_lessons }}</td>
                 <td>
                   {% if e.cert_id %}
-                    <span class="badge badge--success">✓ Awarded</span>
+                    <span class="badge badge--success">Awarded</span>
                   {% else %}
-                    <span class="badge badge--warning">Completed (Unclaimed)</span>
+                    <span class="badge badge--warning">Completed</span>
                   {% endif %}
                 </td>
                 <td>
                   {% if e.cert_id %}
-                    <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">✓ Automatically Generated</span>
+                    <span class="badge badge--neutral">Auto-issued</span>
                   {% else %}
-                    <span style="color: #6b7280; font-size: 0.9rem;">Will generate on student claim</span>
+                    <form method="POST" action="{{ url_for('issue_certificate', user_id=e.user_id, course_id=e.course_id) }}" style="display:inline;">
+                      <button type="submit" class="btn btn--sm btn--primary">Issue certificate</button>
+                    </form>
                   {% endif %}
                 </td>
               </tr>
               {% endfor %}
             {% else %}
-              <tr>
-                <td colspan="5" class="no-data">No 100% course completions found yet.</td>
-              </tr>
+              <tr><td colspan="5" class="no-data-text">No 100% completions yet.</td></tr>
             {% endif %}
           </tbody>
         </table>

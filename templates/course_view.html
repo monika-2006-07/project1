@@ -39,6 +39,9 @@
                 <a href="{{ url_for('view_certificate', code=certificate_code) }}" target="_blank" class="btn" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #78350f; font-weight: 700; padding: 1rem 1.75rem; border-radius: 12px; border: none; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); text-decoration: none; font-size: 1.05rem; transition: all 0.2s;">
                   🎓 View Certificate
                 </a>
+                <a href="{{ url_for('view_certificate', code=certificate_code) }}?download=1" target="_blank" class="btn" style="background: #1e293b; color: white; font-weight: 600; padding: 1rem 1.5rem; border-radius: 12px; text-decoration: none; font-size: 0.95rem;">
+                  Download PDF
+                </a>
               {% endif %}
               <div style="background: #f8fafc; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; min-width: 140px;">
                 <div style="font-weight: 800; font-size: 1.8rem; color: var(--secondary-color);">{{ completed_count }}/{{ lessons|length }}</div>

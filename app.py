@@ -1,8 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, has_request_context
 import sqlite3
 import hashlib
 import os
+import json
 from datetime import datetime
+from werkzeug.utils import secure_filename
+
+from certificate_render import (
+    CERTIFICATE_FIELD_KEYS,
+    config_from_admin_form,
+    parse_field_config,
+    render_certificate_image,
+)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -191,6 +200,12 @@ def init_db():
         conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('instructor_signature', 'Course Instructor')")
         conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('director_name', 'Academic Director')")
         conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('director_signature', 'Academic Director')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('certificate_theme', 'template')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('certificate_background_url', '/static/uploads/canva.webp')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('certificate_aspect_ratio', '1.414')")
+        default_fields = json.dumps(RECOGNITION_FIELD_POSITIONS)
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('certificate_field_positions', ?)", (default_fields,))
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('certificates_enabled', '1')")
         
         conn.commit()
 
@@ -205,6 +220,386 @@ def generate_certificate_code():
     import random
     chars = string.ascii_uppercase + string.digits
     return ''.join(random.choice(chars) for _ in range(12))
+
+
+# Positions for "Certificate of Recognition" style (landscape, centered lines)
+RECOGNITION_FIELD_POSITIONS = {
+    "studentName": {
+        "top": 51, "left": 50, "fontSize": "2.4rem",
+        "fontFamily": "'Cormorant Garamond', 'Times New Roman', Georgia, serif",
+        "fontWeight": "600", "color": "#111111", "textAlign": "center",
+        "transform": "translateX(-50%) translateY(-100%)",
+        "maxWidth": "55%", "lineHeight": "1",
+    },
+    "courseName": {
+        "top": 64, "left": 50, "fontSize": "0.95rem",
+        "fontFamily": "'Times New Roman', Georgia, serif",
+        "fontWeight": "600", "color": "#111111", "textAlign": "center",
+        "transform": "translateX(-50%)", "maxWidth": "50%",
+        "letterSpacing": "0.1em", "lineHeight": "1.2",
+    },
+    "completionDate": {
+        "top": 75, "left": 68.5, "fontSize": "1rem",
+        "fontFamily": "'Times New Roman', Georgia, serif",
+        "fontWeight": "600", "color": "#111111", "textAlign": "center",
+        "transform": "translateX(-50%) translateY(-100%)",
+        "lineHeight": "1",
+    },
+    "certificateId": {
+        "top": 87, "left": 50, "fontSize": "0.48rem",
+        "fontFamily": "'Times New Roman', Georgia, serif",
+        "fontWeight": "400", "color": "#555555", "textAlign": "center",
+        "transform": "translateX(-50%)",
+        "lineHeight": "1",
+    },
+    "instructorName": {
+        "top": 75, "left": 31.5, "fontSize": "1rem",
+        "fontFamily": "'Times New Roman', Georgia, serif",
+        "fontWeight": "600", "color": "#111111", "textAlign": "center",
+        "transform": "translateX(-50%) translateY(-100%)",
+        "lineHeight": "1",
+    },
+}
+
+# Positions for Canva gold ribbon template (left-heavy layout)
+CANVA_FIELD_POSITIONS = {
+    "studentName": {"top": 48, "left": 62, "fontSize": "3.2rem", "fontFamily": "'Alex Brush', cursive", "fontWeight": "400", "color": "#111111", "textAlign": "center", "transform": "translateX(-50%)", "maxWidth": "42%"},
+    "courseName": {"top": 58, "left": 62, "fontSize": "0.72rem", "fontFamily": "'Montserrat', sans-serif", "fontWeight": "400", "color": "#333333", "textAlign": "center", "transform": "translateX(-50%)", "maxWidth": "34%"},
+    "completionDate": {"top": 76, "left": 17.5, "fontSize": "0.55rem", "fontFamily": "'Montserrat', sans-serif", "fontWeight": "600", "color": "#111111", "textAlign": "center", "transform": "translateX(-50%)"},
+    "certificateId": {"top": 97, "left": 97, "fontSize": "0.55rem", "fontFamily": "monospace", "fontWeight": "400", "color": "#666666", "textAlign": "right", "transform": "none"},
+    "instructorName": {"top": 89, "left": 48, "fontSize": "0.82rem", "fontFamily": "'Montserrat', sans-serif", "fontWeight": "700", "color": "#111111", "textAlign": "center", "transform": "translateX(-50%)"},
+}
+
+DEFAULT_CERTIFICATE_FIELD_POSITIONS = RECOGNITION_FIELD_POSITIONS
+
+
+def field_positions_for_aspect_ratio(aspect_ratio):
+    """Pick overlay layout preset from template proportions."""
+    if aspect_ratio and aspect_ratio < 1.38:
+        return RECOGNITION_FIELD_POSITIONS.copy()
+    return CANVA_FIELD_POSITIONS.copy()
+
+
+def load_settings(conn=None, sync_certificate_template=False):
+    """Load all key-value settings from the database."""
+    if conn is None:
+        with get_db() as conn:
+            if sync_certificate_template:
+                sync_certificate_template_to_local_upload(conn)
+            rows = conn.execute("SELECT key, value FROM settings").fetchall()
+    else:
+        if sync_certificate_template:
+            sync_certificate_template_to_local_upload(conn)
+        rows = conn.execute("SELECT key, value FROM settings").fetchall()
+    return {row["key"]: row["value"] for row in rows}
+
+
+CERTIFICATE_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+
+
+def get_certificate_uploads_dir():
+    return os.path.join(app.root_path, "static", "uploads")
+
+
+def get_latest_certificate_template_filename():
+    """Return the most recently modified image in static/uploads."""
+    upload_dir = get_certificate_uploads_dir()
+    if not os.path.isdir(upload_dir):
+        return None
+    latest_name = None
+    latest_mtime = 0
+    for name in os.listdir(upload_dir):
+        if name.lower().endswith(CERTIFICATE_IMAGE_EXTENSIONS):
+            path = os.path.join(upload_dir, name)
+            if os.path.isfile(path):
+                mtime = os.path.getmtime(path)
+                if mtime > latest_mtime:
+                    latest_mtime = mtime
+                    latest_name = name
+    return latest_name
+
+
+def is_direct_image_url(url):
+    """True when URL points to an actual image file, not a Canva share/design page."""
+    if not url:
+        return False
+    lower = url.lower().strip()
+    if lower.startswith("/static/uploads/"):
+        fname = lower.replace("/static/uploads/", "").split("?")[0]
+        return os.path.isfile(os.path.join(get_certificate_uploads_dir(), fname))
+    if "canva.link" in lower or ("canva.com" in lower and "/design" in lower):
+        return False
+    path = lower.split("?")[0]
+    return path.endswith(CERTIFICATE_IMAGE_EXTENSIONS)
+
+
+def absolute_certificate_static_url(filename):
+    """Build a cache-busted URL for a file in static/uploads."""
+    upload_dir = get_certificate_uploads_dir()
+    if has_request_context():
+        base = url_for("static", filename=f"uploads/{filename}", _external=True)
+    else:
+        base = f"/static/uploads/{filename}"
+    path = os.path.join(upload_dir, filename)
+    if os.path.isfile(path):
+        return f"{base}?v={int(os.path.getmtime(path))}"
+    return base
+
+
+def sync_certificate_template_to_local_upload(conn=None):
+    """
+    Point certificate_background_url at the newest uploaded file.
+    Fixes DB rows that still reference external/broken URLs.
+    """
+    upload_dir = get_certificate_uploads_dir()
+    latest = get_latest_certificate_template_filename()
+    if not latest:
+        return None
+
+    local_path = f"/static/uploads/{latest}"
+    close_conn = False
+    if conn is None:
+        conn = get_db()
+        close_conn = True
+    try:
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key = 'certificate_background_url'"
+        ).fetchone()
+        current = (row["value"] if row else "") or ""
+        file_ok = current.startswith("/static/uploads/") and os.path.isfile(
+            os.path.join(upload_dir, current.replace("/static/uploads/", "").split("?")[0])
+        )
+        file_path = os.path.join(upload_dir, latest)
+        aspect = detect_certificate_aspect_ratio(file_path)
+        positions = field_positions_for_aspect_ratio(aspect)
+        needs_sync = current != local_path or not file_ok or current.startswith("http")
+        if needs_sync:
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('certificate_background_url', ?)",
+                (local_path,),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('certificate_aspect_ratio', ?)",
+                (str(aspect),),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('certificate_field_positions', ?)",
+                (json.dumps(positions),),
+            )
+            conn.commit()
+    finally:
+        if close_conn:
+            conn.close()
+    return local_path
+
+
+def resolve_certificate_template_url(settings):
+    """
+    Use admin-uploaded files from static/uploads only.
+    External image URLs are ignored when a local upload exists (they often block embedding).
+    """
+    upload_dir = get_certificate_uploads_dir()
+    raw = (settings.get("certificate_background_url") or "").strip()
+
+    if raw.startswith("/static/uploads/"):
+        fname = raw.replace("/static/uploads/", "").split("?")[0]
+        if os.path.isfile(os.path.join(upload_dir, fname)):
+            return absolute_certificate_static_url(fname)
+
+    latest = get_latest_certificate_template_filename()
+    if latest:
+        return absolute_certificate_static_url(latest)
+
+    if os.path.isfile(os.path.join(upload_dir, "canva.webp")):
+        return absolute_certificate_static_url("canva.webp")
+
+    return absolute_certificate_static_url(latest) if latest else "/static/uploads/canva.webp"
+
+
+def get_template_filesystem_path(settings):
+    """Absolute path to the admin-uploaded certificate template image."""
+    upload_dir = get_certificate_uploads_dir()
+    raw = (settings.get("certificate_background_url") or "").strip()
+    fname = None
+    if raw.startswith("/static/uploads/"):
+        fname = raw.replace("/static/uploads/", "").split("?")[0]
+        if not os.path.isfile(os.path.join(upload_dir, fname)):
+            fname = None
+    if not fname:
+        fname = get_latest_certificate_template_filename()
+    if not fname:
+        return None
+    return os.path.join(upload_dir, fname)
+
+
+def get_generated_certificates_dir():
+    path = os.path.join(app.root_path, "static", "generated", "certificates")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _settings_config_version(settings):
+    """Version stamp so we regenerate when template or field config changes."""
+    parts = [
+        settings.get("certificate_background_url", ""),
+        settings.get("certificate_field_config", ""),
+        settings.get("certificate_field_positions", ""),
+        settings.get("instructor_name", ""),
+        settings.get("director_name", ""),
+    ]
+    return hash("|".join(parts))
+
+
+def ensure_certificate_image(cert, settings, force=False):
+    """
+    Render certificate as a flat image (template + replaced text).
+    Returns URL path to the generated JPEG.
+    """
+    template_path = get_template_filesystem_path(settings)
+    if not template_path:
+        return None
+
+    code = cert["certificate_code"]
+    out_path = os.path.join(get_generated_certificates_dir(), f"{code}.jpg")
+    cert_dict = dict(cert)
+
+    config_version = _settings_config_version(settings)
+    if (
+        not force
+        and os.path.isfile(out_path)
+        and os.path.getmtime(out_path) >= os.path.getmtime(template_path)
+    ):
+        meta_path = out_path + ".meta"
+        if os.path.isfile(meta_path):
+            try:
+                with open(meta_path, encoding="utf-8") as f:
+                    if f.read().strip() == str(config_version):
+                        return f"/static/generated/certificates/{code}.jpg?v={int(os.path.getmtime(out_path))}"
+            except OSError:
+                pass
+
+    try:
+        render_certificate_image(template_path, out_path, cert_dict, settings)
+        with open(out_path + ".meta", "w", encoding="utf-8") as f:
+            f.write(str(config_version))
+        return f"/static/generated/certificates/{code}.jpg?v={int(os.path.getmtime(out_path))}"
+    except Exception as exc:
+        app.logger.error("Certificate render failed: %s", exc)
+        return None
+
+
+def detect_certificate_aspect_ratio(file_path):
+    """Read image dimensions for accurate certificate scaling."""
+    try:
+        from PIL import Image
+        with Image.open(file_path) as img:
+            w, h = img.size
+            if h > 0:
+                return round(w / h, 4)
+    except Exception:
+        pass
+    return 1.414
+
+
+def get_certificate_field_positions(settings):
+    """Return field overlay positions (percent-based) for the uploaded template."""
+    try:
+        aspect_ratio = float(settings.get("certificate_aspect_ratio") or "1.414")
+    except ValueError:
+        aspect_ratio = 1.414
+    base = field_positions_for_aspect_ratio(aspect_ratio)
+
+    raw = settings.get("certificate_field_positions")
+    if not raw:
+        return base
+    try:
+        parsed = json.loads(raw)
+        merged = base.copy()
+        merged.update(parsed)
+        return merged
+    except (json.JSONDecodeError, TypeError):
+        return base
+
+
+def try_issue_certificate(conn, user_id, course_id):
+    """Create a certificate when the user has completed every lesson in the course."""
+    total = conn.execute(
+        "SELECT COUNT(*) AS c FROM lessons WHERE course_id = ?",
+        (course_id,),
+    ).fetchone()["c"]
+    if total == 0:
+        return None
+
+    completed = conn.execute(
+        """
+        SELECT COUNT(*) AS c FROM user_lesson_progress up
+        JOIN lessons l ON up.lesson_id = l.id
+        WHERE up.user_id = ? AND l.course_id = ?
+        """,
+        (user_id, course_id),
+    ).fetchone()["c"]
+
+    if completed < total:
+        return None
+
+    existing = conn.execute(
+        "SELECT certificate_code FROM certificates WHERE user_id = ? AND course_id = ?",
+        (user_id, course_id),
+    ).fetchone()
+    if existing:
+        return existing["certificate_code"]
+
+    code = generate_certificate_code()
+    conn.execute(
+        "INSERT INTO certificates (user_id, course_id, certificate_code) VALUES (?, ?, ?)",
+        (user_id, course_id, code),
+    )
+    conn.commit()
+
+    cert_row = conn.execute(
+        """
+        SELECT cert.*, u.username, c.title AS course_title
+        FROM certificates cert
+        JOIN users u ON cert.user_id = u.id
+        JOIN courses c ON cert.course_id = c.id
+        WHERE cert.certificate_code = ?
+        """,
+        (code,),
+    ).fetchone()
+    if cert_row:
+        settings = load_settings(conn)
+        ensure_certificate_image(cert_row, settings, force=True)
+
+    return code
+
+
+def build_certificate_payload(cert_row, settings):
+    """Build JSON payload for certificate preview / API."""
+    image_url = ensure_certificate_image(cert_row, settings)
+    template_url = resolve_certificate_template_url(settings)
+    try:
+        aspect_ratio = float(settings.get("certificate_aspect_ratio") or "1.414")
+    except ValueError:
+        aspect_ratio = 1.414
+
+    issued = cert_row["issued_at"]
+    if isinstance(issued, str) and len(issued) >= 10:
+        completion_date = issued[:10]
+    else:
+        completion_date = str(issued)[:10] if issued else datetime.now().strftime("%Y-%m-%d")
+
+    return {
+        "certificateCode": cert_row["certificate_code"],
+        "studentName": cert_row["username"],
+        "courseName": (cert_row["course_title"] or "").upper(),
+        "completionDate": completion_date,
+        "instructorName": settings.get("instructor_name", "Course Instructor"),
+        "founderName": settings.get("director_name", "Academic Director"),
+        "generatedImageUrl": image_url,
+        "templateUrl": template_url,
+        "aspectRatio": aspect_ratio,
+        "fields": parse_field_config(settings),
+    }
 
 
 # ── helpers ────────────────────────────────────────────────
@@ -1041,7 +1436,28 @@ def dashboard():
             (user_id,),
         ).fetchall()
 
-    # Check if user is currently punched in
+        certs_enabled_row = conn.execute("SELECT value FROM settings WHERE key = 'certificates_enabled'").fetchone()
+        certs_enabled = certs_enabled_row and certs_enabled_row['value'] == '1'
+        certificate_previews = []
+        if certs_enabled:
+            sync_certificate_template_to_local_upload(conn)
+            settings = load_settings(conn)
+            certs_raw = conn.execute(
+                """
+                SELECT cert.*, u.username, c.title AS course_title
+                FROM certificates cert
+                JOIN users u ON cert.user_id = u.id
+                JOIN courses c ON cert.course_id = c.id
+                WHERE cert.user_id = ?
+                ORDER BY cert.issued_at DESC
+                LIMIT 6
+                """,
+                (user_id,),
+            ).fetchall()
+            certificate_previews = [
+                build_certificate_payload(dict(row), settings) for row in certs_raw
+            ]
+
     is_punched_in = open_session is not None
 
     return render_template(
@@ -1051,6 +1467,8 @@ def dashboard():
         history=history,
         assignments=assignments,
         is_punched_in=is_punched_in,
+        certificates_enabled=certs_enabled,
+        certificate_previews=certificate_previews,
     )
 
 
@@ -1455,24 +1873,9 @@ def view_course(course_id):
                 lesson_dict["is_completed"] = False
             lessons.append(lesson_dict)
 
-        # Automatic Certificate Generation
         certificate_code = None
         if is_enrolled and lessons:
-            completed_lessons_count = sum(1 for l in lessons if l["is_completed"])
-            if completed_lessons_count == len(lessons):
-                cert = conn.execute(
-                    "SELECT certificate_code FROM certificates WHERE user_id = ? AND course_id = ?",
-                    (user_id, course_id)
-                ).fetchone()
-                if not cert:
-                    certificate_code = generate_certificate_code()
-                    conn.execute(
-                        "INSERT INTO certificates (user_id, course_id, certificate_code) VALUES (?, ?, ?)",
-                        (user_id, course_id, certificate_code)
-                    )
-                    conn.commit()
-                else:
-                    certificate_code = cert["certificate_code"]
+            certificate_code = try_issue_certificate(conn, user_id, course_id)
 
     return render_template("course_view.html", course=course, lessons=lessons, is_enrolled=is_enrolled, certificate_code=certificate_code)
 
@@ -1540,8 +1943,9 @@ def complete_lesson(lesson_id):
                 )
                 conn.commit()
             except sqlite3.IntegrityError:
-                pass # Already completed
-            
+                pass  # Already completed
+
+            try_issue_certificate(conn, user_id, lesson["course_id"])
             return redirect(url_for("view_course", course_id=lesson["course_id"]))
     
     return redirect(url_for("courses"))
@@ -1561,8 +1965,12 @@ def complete_and_next_lesson(lesson_id, next_lesson_id):
             )
             conn.commit()
         except sqlite3.IntegrityError:
-            pass # Already completed
-            
+            pass  # Already completed
+
+        lesson = conn.execute("SELECT course_id FROM lessons WHERE id = ?", (lesson_id,)).fetchone()
+        if lesson:
+            try_issue_certificate(conn, user_id, lesson["course_id"])
+
     return redirect(url_for("view_lesson", lesson_id=next_lesson_id))
 
 
@@ -1595,10 +2003,40 @@ def admin_certificates():
             if e["total_lessons"] > 0 and e["total_lessons"] == e["completed_lessons"]:
                 completed_enrollments.append(e)
 
-        settings_rows = conn.execute("SELECT * FROM settings").fetchall()
-        settings = {row["key"]: row["value"] for row in settings_rows}
+        sync_certificate_template_to_local_upload(conn)
+        settings = load_settings(conn)
+        template_preview_url = resolve_certificate_template_url(settings)
+        active_template_file = get_latest_certificate_template_filename()
+        field_config = parse_field_config(settings)
+        field_config_json = json.dumps({"fields": field_config})
+        enabled_row = conn.execute("SELECT value FROM settings WHERE key = 'certificates_enabled'").fetchone()
+        certificates_enabled = enabled_row and enabled_row['value'] == '1'
 
-    return render_template("admin_certificates.html", enrollments=completed_enrollments, settings=settings)
+    return render_template(
+        "admin_certificates.html",
+        enrollments=completed_enrollments,
+        settings=settings,
+        template_preview_url=template_preview_url,
+        active_template_file=active_template_file,
+        field_config=field_config,
+        field_config_json=field_config_json,
+        field_keys=CERTIFICATE_FIELD_KEYS,
+        certificates_enabled=certificates_enabled,
+    )
+
+
+@app.route("/admin/toggle_certificates", methods=["POST"])
+def toggle_certificates():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    with get_db() as conn:
+        current = conn.execute("SELECT value FROM settings WHERE key = 'certificates_enabled'").fetchone()
+        new_val = '0' if (current and current['value'] == '1') else '1'
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('certificates_enabled', ?)", (new_val,))
+        conn.commit()
+    status = "enabled" if new_val == '1' else "disabled"
+    flash(f"Certificates have been {status}.", "success")
+    return redirect(url_for("admin_certificates"))
 
 
 @app.route("/admin/settings/certificate", methods=["POST"])
@@ -1611,16 +2049,74 @@ def update_certificate_settings():
     instructor_signature = request.form.get("instructor_signature", "").strip()
     director_name = request.form.get("director_name", "").strip()
     director_signature = request.form.get("director_signature", "").strip()
+    certificate_theme = request.form.get("certificate_theme", "classic_gold").strip()
     
+    allowed_themes = ["template", "canva_gold", "custom"]
+    if certificate_theme not in allowed_themes:
+        certificate_theme = "template"
+
+    custom_bg = request.files.get("custom_background")
+    custom_bg_path = None
+    aspect_ratio_update = None
+    template_changed = False
+
+    if custom_bg and custom_bg.filename:
+        upload_dir = get_certificate_uploads_dir()
+        os.makedirs(upload_dir, exist_ok=True)
+        base = secure_filename(custom_bg.filename)
+        if not base.lower().endswith(CERTIFICATE_IMAGE_EXTENSIONS):
+            flash("Please upload a PNG, JPG, or WebP image file.", "error")
+            return redirect(url_for("admin_certificates"))
+        filename = f"cert_{int(datetime.now().timestamp())}_{base}"
+        file_path = os.path.join(upload_dir, filename)
+        custom_bg.save(file_path)
+        custom_bg_path = f"/static/uploads/{filename}"
+        aspect_val = detect_certificate_aspect_ratio(file_path)
+        aspect_ratio_update = str(aspect_val)
+        template_changed = True
+
     with get_db() as conn:
+        if not (custom_bg and custom_bg.filename):
+            sync_certificate_template_to_local_upload(conn)
+
+        settings_before = load_settings(conn)
+        field_config = config_from_admin_form(request.form, settings_before)
+        field_config_json = json.dumps(field_config)
+
         conn.execute("UPDATE settings SET value = ? WHERE key = 'academy_name'", (academy_name,))
         conn.execute("UPDATE settings SET value = ? WHERE key = 'instructor_name'", (instructor_name,))
         conn.execute("UPDATE settings SET value = ? WHERE key = 'instructor_signature'", (instructor_signature,))
         conn.execute("UPDATE settings SET value = ? WHERE key = 'director_name'", (director_name,))
         conn.execute("UPDATE settings SET value = ? WHERE key = 'director_signature'", (director_signature,))
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'certificate_theme'", (certificate_theme,))
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('certificate_field_config', ?)",
+            (field_config_json,),
+        )
+
+        if custom_bg_path:
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('certificate_background_url', ?)",
+                (custom_bg_path,),
+            )
+        if aspect_ratio_update:
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('certificate_aspect_ratio', ?)",
+                (aspect_ratio_update,),
+            )
+
         conn.commit()
-        
-    flash("Certificate settings updated successfully!", "success")
+
+        if template_changed:
+            gen_dir = get_generated_certificates_dir()
+            for name in os.listdir(gen_dir):
+                if name.endswith((".jpg", ".jpeg", ".meta")):
+                    try:
+                        os.remove(os.path.join(gen_dir, name))
+                    except OSError:
+                        pass
+
+    flash("Certificate template saved. Drag boxes on the preview if text areas need adjustment.", "success")
     return redirect(url_for("admin_certificates"))
 
 
@@ -1637,6 +2133,19 @@ def issue_certificate(user_id, course_id):
                 (user_id, course_id, code)
             )
             conn.commit()
+            cert_row = conn.execute(
+                """
+                SELECT cert.*, u.username, c.title AS course_title
+                FROM certificates cert
+                JOIN users u ON cert.user_id = u.id
+                JOIN courses c ON cert.course_id = c.id
+                WHERE cert.certificate_code = ?
+                """,
+                (code,),
+            ).fetchone()
+            if cert_row:
+                settings = load_settings(conn)
+                ensure_certificate_image(cert_row, settings, force=True)
         flash("Certificate issued successfully!", "success")
     except sqlite3.IntegrityError:
         flash("Certificate already exists for this user/course.", "error")
@@ -1648,38 +2157,87 @@ def issue_certificate(user_id, course_id):
 def my_certificates():
     if "user_id" not in session:
         return redirect(url_for("login"))
+    with get_db() as conn:
+        enabled = conn.execute("SELECT value FROM settings WHERE key = 'certificates_enabled'").fetchone()
+        if not enabled or enabled['value'] != '1':
+            flash("Certificates are currently disabled.", "error")
+            return redirect(url_for("dashboard"))
 
     user_id = session["user_id"]
     with get_db() as conn:
-        certs = conn.execute("""
-            SELECT cert.*, c.title as course_title, c.description as course_desc
+        sync_certificate_template_to_local_upload(conn)
+        settings = load_settings(conn)
+        certs = conn.execute(
+            """
+            SELECT cert.*, u.username, c.title AS course_title, c.description AS course_desc
             FROM certificates cert
+            JOIN users u ON cert.user_id = u.id
             JOIN courses c ON cert.course_id = c.id
             WHERE cert.user_id = ?
             ORDER BY cert.issued_at DESC
-        """, (user_id,)).fetchall()
-    return render_template("user_certificates.html", certificates=certs)
+            """,
+            (user_id,),
+        ).fetchall()
+        certificate_previews = [
+            build_certificate_payload(dict(row), settings) for row in certs
+        ]
+    return render_template(
+        "user_certificates.html",
+        certificates=certs,
+        certificate_previews=certificate_previews,
+    )
+
+
+def fetch_certificate_by_code(code):
+    with get_db() as conn:
+        cert = conn.execute(
+            """
+            SELECT cert.*, u.username, c.title AS course_title
+            FROM certificates cert
+            JOIN users u ON cert.user_id = u.id
+            JOIN courses c ON cert.course_id = c.id
+            WHERE cert.certificate_code = ?
+            """,
+            (code,),
+        ).fetchone()
+        if not cert:
+            return None, None
+        sync_certificate_template_to_local_upload(conn)
+        settings = load_settings(conn)
+        return cert, settings
+
+
+@app.route("/api/certificate/<string:code>")
+def api_certificate(code):
+    cert, settings = fetch_certificate_by_code(code)
+    if not cert:
+        return jsonify({"error": "Certificate not found"}), 404
+    return jsonify(build_certificate_payload(cert, settings))
 
 
 @app.route("/certificate/view/<string:code>")
 def view_certificate(code):
     with get_db() as conn:
-        cert = conn.execute("""
-            SELECT cert.*, u.username, c.title as course_title
-            FROM certificates cert
-            JOIN users u ON cert.user_id = u.id
-            JOIN courses c ON cert.course_id = c.id
-            WHERE cert.certificate_code = ?
-        """, (code,)).fetchone()
-        
-        settings_rows = conn.execute("SELECT * FROM settings").fetchall()
-        settings = {row["key"]: row["value"] for row in settings_rows}
-    
+        enabled = conn.execute("SELECT value FROM settings WHERE key = 'certificates_enabled'").fetchone()
+        if not enabled or enabled['value'] != '1':
+            flash("Certificates are currently disabled.", "error")
+            return redirect(url_for("index"))
+    cert, settings = fetch_certificate_by_code(code)
     if not cert:
         flash("Invalid certificate code.", "error")
         return redirect(url_for("index"))
-    
-    return render_template("certificate_view.html", cert=cert, settings=settings)
+
+    image_url = ensure_certificate_image(cert, settings, force=request.args.get("refresh") == "1")
+    if not image_url:
+        flash("Could not generate certificate. Ask admin to upload a valid template.", "error")
+        return redirect(url_for("index"))
+
+    return render_template(
+        "certificate_image.html",
+        cert=cert,
+        image_url=image_url,
+        certificate_code=code,
+    )
 
 
 # ── User Course Creation Routes ─────────────────────────────
